@@ -360,7 +360,8 @@ const b64 = buf => { const u = new Uint8Array(buf); let s = ""; for (let i = 0; 
 const unb64 = str => { const bin = atob(str), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u.buffer; };
 
 function onMessage(msg){
-  if (typeof msg?.data === "string"){ try { msg = JSON.parse(msg.data); } catch(e) { return; } }
+  /* La bibliothèque donne des messages déjà décodés ; son champ « data » contient le son, pas du texte à décoder */
+  if (typeof MessageEvent !== "undefined" && msg instanceof MessageEvent){ try { msg = JSON.parse(msg.data); } catch(e) { return; } }
   if (msg.setupComplete && session && session._resolveReady) session._resolveReady();
   lastMsg = Object.keys(msg).filter(k => msg[k] !== undefined).join(",") + (msg.serverContent ? ":" + Object.keys(msg.serverContent).join("+") : "");
   diag();
