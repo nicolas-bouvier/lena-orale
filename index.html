@@ -182,7 +182,7 @@ const AVATAR_URL = "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.7.0/av
 const HA_WORKLET = "https://cdn.jsdelivr.net/npm/@met4citizen/headaudio@0.1.0/dist/headworklet.min.mjs";
 const HA_MODEL = "https://cdn.jsdelivr.net/npm/@met4citizen/headaudio@0.1.0/dist/model-en-mixed.bin";
 /* Le premier modèle vocal disponible sur la clé est utilisé */
-const MODELS = ["gemini-3.8-live", "gemini-3.1-flash-live-preview", "gemini-2.5-flash-native-audio-preview-12-2025"];
+const MODELS = ["gemini-2.5-flash-native-audio-preview-12-2025", "gemini-3.1-flash-live-preview", "gemini-3.8-live"];
 const TOPICS = [
   {id:"libre", fr:"Libre", de:"a relaxed chat about anything: the learner's day, their week, their plans"},
   {id:"vorstellen", fr:"Se présenter", de:"getting to know each other: name, where you come from, where you live, family, work"},
@@ -219,6 +219,11 @@ const idb = {
   del(k){ return this.run("readwrite", st => st.delete(k)); }
 };
 
+/* ---------- Un seul circuit audio : la voix de Lena et le micro ---------- */
+const AC = window.AudioContext || window.webkitAudioContext;
+const audioCtx = new AC();
+async function wakeAudio(){ try { if (audioCtx.state !== "running") await audioCtx.resume(); } catch(e) {} return audioCtx.state === "running"; }
+
 /* ---------- Lena en 3D ---------- */
 /* Un sourire au repos : les coins de la bouche relevés, les joues un peu plissées */
 const SMILE = { mouthSmileLeft: 0.55, mouthSmileRight: 0.55, cheekSquintLeft: 0.2, cheekSquintRight: 0.2, mouthDimpleLeft: 0.15, mouthDimpleRight: 0.15, eyeSquintLeft: 0.1, eyeSquintRight: 0.1 };
@@ -226,7 +231,7 @@ let head = null, headaudio = null, avatarReady = false;
 async function loadAvatar(){
   try {
     head = new TalkingHead($("avatar"), {
-      ttsEndpoint: "N/A", lipsyncModules: ["de"], lipsyncLang: "de",
+      ttsEndpoint: "N/A", lipsyncModules: ["de"], lipsyncLang: "de", audioCtx,
       cameraView: "upper", cameraRotateEnable: false, avatarMood: "happy", modelFPS: 30
     });
     let custom = null; try { custom = await idb.get("avatar"); } catch(e) {}
@@ -311,7 +316,7 @@ let curLena = null, curMe = null;
 
 function diag(extra){
   $("diag").hidden = !live;
-  $("diagText").textContent = extra || `${session && !connecting ? "Connectée" : "Connexion…"} (${(model || lastModel).replace("gemini-", "")}) · voix reçue : ${chunks} morceau${chunks > 1 ? "x" : ""}${lastMsg ? " · " + lastMsg : ""}`;
+  $("diagText").textContent = extra || `${session && !connecting ? "Connectée" : "Connexion…"} (${(model || lastModel).replace("gemini-", "")}) · voix reçue : ${chunks} morceau${chunks > 1 ? "x" : ""} · son : ${audioCtx.state === "running" ? "actif" : "en pause"}${lastMsg ? " · " + lastMsg : ""}`;
 }
 function setPill(state, text){
   $("pill").className = "pill " + state; $("pillText").textContent = text;
@@ -371,6 +376,7 @@ function onMessage(msg){
       const dur = buf.byteLength / 2 / 24000 * 1000;
       speakUntil = Math.max(speakUntil, Date.now()) + dur;
       chunks++; diag();
+      if (audioCtx.state !== "running") askForSound();
       if (head && avatarReady) head.streamAudio({ audio: buf });
       else playFallback(buf);
     }
@@ -381,7 +387,7 @@ function onMessage(msg){
 /* Si l'avatar n'a pas pu se charger, la voix passe directement par le haut-parleur */
 let fbCtx = null, fbTime = 0;
 function playFallback(buf){
-  fbCtx = fbCtx || new AudioContext({ sampleRate: 24000 });
+  fbCtx = audioCtx;
   const i16 = new Int16Array(buf), f = new Float32Array(i16.length);
   for (let i = 0; i < i16.length; i++) f[i] = i16[i] / 0x8000;
   const ab = fbCtx.createBuffer(1, f.length, 24000); ab.copyToChannel(f, 0);
@@ -436,7 +442,7 @@ function closeMessage(reason){
 /* Le micro : son capté à 16 kHz, envoyé par petits morceaux de 100 ms */
 async function startMic(){
   const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 } });
-  let ctx; try { ctx = new AudioContext({ sampleRate: 16000 }); } catch(e) { ctx = new AudioContext(); }
+  const ctx = audioCtx;
   const code = `class Cap extends AudioWorkletProcessor{constructor(){super();this.r=sampleRate/16000;this.a=0;this.b=[];}
     process(i){const c=i[0]&&i[0][0];if(c){for(let k=0;k<c.length;k++){this.a+=1;if(this.a>=this.r){this.a-=this.r;this.b.push(c[k]);}}
     if(this.b.length>=1600){const o=new Int16Array(this.b.length);let q=0;for(let k=0;k<o.length;k++){const s=Math.max(-1,Math.min(1,this.b[k]));q+=s*s;o[k]=s<0?s*0x8000:s*0x7fff;}this.port.postMessage({b:o.buffer,r:Math.sqrt(q/o.length)},[o.buffer]);this.b=[];}}return true;}}
@@ -451,23 +457,26 @@ async function startMic(){
     if (!live || !session || muted || gated) return;
     try { session.sendRealtimeInput({ audio: { data: b64(b), mimeType: "audio/pcm;rate=16000" } }); } catch(e) { diag("Envoi du son impossible : " + (e && e.message)); }
   };
+  const sink = ctx.createGain(); sink.gain.value = 0; node.connect(sink); sink.connect(ctx.destination);
   src.connect(node);
-  await ctx.resume();
-  return { stream, ctx, node };
+  await wakeAudio();
+  return { stream, ctx, node, src, sink };
 }
 
 async function start(){
+  const woke = audioCtx.resume().catch(() => {});
   if (!cfg.apiKey){ $("settings").showModal(); return; }
   $("big").disabled = true; setPill("", "Connexion…");
   try {
-    if (head){ await head.audioCtx.resume(); await setupLips(); }
+    await woke;
+    if (head) await setupLips();
     if (head && avatarReady){
       await head.streamStart({ sampleRate: 24000, lipsyncType: "visemes", lipsyncLang: "de", mood: "happy" },
         () => { lenaSpeaking = true; setPill("speaking", "Lena parle…"); },
         () => { lenaSpeaking = false; if (live) setPill("listening", "À vous, je vous écoute…"); });
     }
     mic = await startMic();
-    if (head) { try { await head.audioCtx.resume(); } catch(e) {} }
+    if (!(await wakeAudio())) askForSound();
     live = true; connecting = true; chunks = 0; speakUntil = 0; diag();
     session = await connect();
     connecting = false;
@@ -488,11 +497,18 @@ async function start(){
     showError(/Permission|NotAllowed|denied/i.test(m) ? "Le micro est refusé. Autorisez-le pour cette page (Réglages de l’iPhone › Safari › Micro), puis réessayez." : closeMessage(m));
   } finally { $("big").disabled = false; }
 }
+/* Si l'iPhone a mis le son en pause, un toucher sur Lena le réveille */
+function askForSound(){
+  setPill("err", "Touchez Lena pour activer le son");
+  const stage = document.querySelector(".stage");
+  const once = async () => { if (await wakeAudio()) { stage.removeEventListener("click", once); setPill("listening", "À vous, je vous écoute…"); diag(); } };
+  stage.addEventListener("click", once);
+}
 function stop(){
   live = false; lenaSpeaking = false;
   try { session && session.close(); } catch(e) {}
   session = null;
-  if (mic){ try { mic.stream.getTracks().forEach(t => t.stop()); mic.ctx.close(); } catch(e) {} mic = null; }
+  if (mic){ try { mic.stream.getTracks().forEach(t => t.stop()); mic.src.disconnect(); mic.node.disconnect(); mic.sink.disconnect(); } catch(e) {} mic = null; }
   if (head && avatarReady){ try { head.streamStop(); } catch(e) {} }
   try { wakeLock && wakeLock.release(); } catch(e) {} wakeLock = null;
   clearInterval(tick); $("timer").hidden = true; $("diag").hidden = true; model = "";
