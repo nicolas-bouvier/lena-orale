@@ -1,0 +1,15 @@
+{
+  "name": "Lena à l'oral",
+  "short_name": "Lena",
+  "description": "Parler allemand avec Lena, à voix haute.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F7F2EA",
+  "theme_color": "#04346B",
+  "lang": "fr",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}
