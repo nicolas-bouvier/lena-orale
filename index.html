@@ -80,6 +80,9 @@ header h1 em{color:var(--accent)}
 .side{width:52px;height:52px;border-radius:50%;border:0;background:var(--sheet2);color:var(--muted);display:grid;place-items:center}
 .side[aria-pressed="true"]{background:var(--bad-soft);color:var(--bad)}
 .side svg{width:22px;height:22px}
+.diag{display:flex;align-items:center;gap:10px;font-size:.8rem;color:var(--muted);padding:2px 4px 6px}
+.lvl{flex:none;width:70px;height:6px;border-radius:999px;background:var(--sheet2);overflow:hidden}
+.lvl i{display:block;height:100%;width:0;background:var(--good);transition:width .1s}
 .label{text-align:center;font-size:.85rem;color:var(--muted);margin-top:-6px;padding-bottom:6px}
 
 /* Réglages */
@@ -128,6 +131,7 @@ a{color:var(--accent)}
     <p class="hint" id="hint">Choisissez un sujet, touchez le bouton doré, et parlez à Lena en allemand, comme au téléphone. Le texte s’écrit ici.</p>
   </div>
 
+  <div class="diag" id="diag" hidden><span class="lvl"><i id="lvl"></i></span><span id="diagText">Micro</span></div>
   <div class="topics" id="topics" role="group" aria-label="Sujet"></div>
   <div class="controls">
     <button class="side" id="mute" aria-pressed="false" aria-label="Couper mon micro" style="visibility:hidden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg></button>
@@ -298,9 +302,14 @@ async function setupLips(){
 }
 
 /* ---------- La conversation (Gemini Live) ---------- */
+let speakUntil = 0, chunks = 0, model = "";
 let connecting = false, live = false, session = null, mic = null, muted = false, lenaSpeaking = false, startedAt = 0, tick = null, wakeLock = null;
 let curLena = null, curMe = null;
 
+function diag(extra){
+  $("diag").hidden = !live;
+  $("diagText").textContent = extra || `${session && !connecting ? "Connectée" : "Connexion…"} · voix reçue : ${chunks} morceau${chunks > 1 ? "x" : ""}`;
+}
 function setPill(state, text){
   $("pill").className = "pill " + state; $("pillText").textContent = text;
 }
@@ -352,8 +361,12 @@ function onMessage(msg){
     if (p.inlineData?.data){
       if (curMe) closeTurn("me");
       lenaSpeaking = true; setPill("speaking", "Lena parle…");
-      if (head && avatarReady) head.streamAudio({ audio: unb64(p.inlineData.data) });
-      else playFallback(unb64(p.inlineData.data));
+      const buf = unb64(p.inlineData.data);
+      const dur = buf.byteLength / 2 / 24000 * 1000;
+      speakUntil = Math.max(speakUntil, Date.now()) + dur;
+      chunks++; diag();
+      if (head && avatarReady) head.streamAudio({ audio: buf });
+      else playFallback(buf);
     }
   }
   if (sc.outputTranscription?.text){ if (curMe) closeTurn("me"); appendTo("lena", sc.outputTranscription.text); }
@@ -374,7 +387,7 @@ function playFallback(buf){
 async function connect(){
   const ai = new GoogleGenAI({ apiKey: cfg.apiKey });
   let lastErr = "";
-  for (const model of MODELS){
+  for (const m of MODELS){ model = m;
     try {
       let resolveReady, rejectReady;
       const ready = new Promise((res, rej) => { resolveReady = res; rejectReady = rej; });
@@ -391,16 +404,16 @@ async function connect(){
         callbacks: {
           onopen: () => {},
           onmessage: onMessage,
-          onerror: e => { lastErr = (e && (e.message || e.error?.message)) || "erreur réseau"; },
+          onerror: e => { lastErr = (e && (e.message || e.error?.message)) || "erreur réseau"; diag("Erreur : " + lastErr); },
           onclose: e => { closed = true; lastErr = (e && e.reason) || lastErr; rejectReady(new Error(lastErr || "fermée")); if (!connecting && live && session === s) { stop(); showError(closeMessage(lastErr)); } }
         }
       });
       s._resolveReady = resolveReady; session = s;
       await Promise.race([ready, new Promise(res => setTimeout(res, 4000))]);
-      if (!closed) return s;
+      if (!closed){ window.__model = model; return s; }
     } catch(e) {
       lastErr = (e && e.message) || String(e);
-      session = null;
+      session = null; model = "";
       if (/api key|API_KEY|permission|401|403/i.test(lastErr)) break;
     }
   }
@@ -419,14 +432,17 @@ async function startMic(){
   let ctx; try { ctx = new AudioContext({ sampleRate: 16000 }); } catch(e) { ctx = new AudioContext(); }
   const code = `class Cap extends AudioWorkletProcessor{constructor(){super();this.r=sampleRate/16000;this.a=0;this.b=[];}
     process(i){const c=i[0]&&i[0][0];if(c){for(let k=0;k<c.length;k++){this.a+=1;if(this.a>=this.r){this.a-=this.r;this.b.push(c[k]);}}
-    if(this.b.length>=1600){const o=new Int16Array(this.b.length);for(let k=0;k<o.length;k++){const s=Math.max(-1,Math.min(1,this.b[k]));o[k]=s<0?s*0x8000:s*0x7fff;}this.port.postMessage(o.buffer,[o.buffer]);this.b=[];}}return true;}}
+    if(this.b.length>=1600){const o=new Int16Array(this.b.length);let q=0;for(let k=0;k<o.length;k++){const s=Math.max(-1,Math.min(1,this.b[k]));q+=s*s;o[k]=s<0?s*0x8000:s*0x7fff;}this.port.postMessage({b:o.buffer,r:Math.sqrt(q/o.length)},[o.buffer]);this.b=[];}}return true;}}
     registerProcessor('cap16',Cap);`;
   await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([code], { type: "application/javascript" })));
   const src = ctx.createMediaStreamSource(stream), node = new AudioWorkletNode(ctx, "cap16");
   node.port.onmessage = ev => {
-    if (!live || !session || muted) return;
-    if (lenaSpeaking && !cfg.headset) return;
-    try { session.sendRealtimeInput({ audio: { data: b64(ev.data), mimeType: "audio/pcm;rate=16000" } }); } catch(e) {}
+    const { b, r } = ev.data;
+    const gated = !cfg.headset && Date.now() < speakUntil + 400;
+    $("lvl").style.width = (muted || gated ? 0 : Math.min(100, Math.round(r * 400))) + "%";
+    if (!gated && lenaSpeaking && Date.now() > speakUntil + 400){ lenaSpeaking = false; if (live) setPill("listening", "À vous, je vous écoute…"); }
+    if (!live || !session || muted || gated) return;
+    try { session.sendRealtimeInput({ audio: { data: b64(b), mimeType: "audio/pcm;rate=16000" } }); } catch(e) { diag("Envoi du son impossible : " + (e && e.message)); }
   };
   src.connect(node);
   await ctx.resume();
@@ -444,7 +460,8 @@ async function start(){
         () => { lenaSpeaking = false; if (live) setPill("listening", "À vous, je vous écoute…"); });
     }
     mic = await startMic();
-    live = true; connecting = true;
+    if (head) { try { await head.audioCtx.resume(); } catch(e) {} }
+    live = true; connecting = true; chunks = 0; speakUntil = 0; diag();
     session = await connect();
     connecting = false;
     try { wakeLock = await navigator.wakeLock?.request("screen"); } catch(e) {}
@@ -452,7 +469,10 @@ async function start(){
     $("big").classList.add("on"); $("big").setAttribute("aria-label", "Terminer la conversation"); $("bigLabel").textContent = "Terminer";
     $("mute").style.visibility = "visible"; $("topics").hidden = true;
     setPill("listening", "Lena se prépare…");
-    session.sendClientContent({ turns: [{ role: "user", parts: [{ text: "(The learner has just started the conversation. Greet them and begin.)" }] }], turnComplete: true });
+    diag();
+    const hello = "(The learner has just started the conversation. Greet them and begin.)";
+    try { session.sendRealtimeInput({ text: hello }); }
+    catch(e) { try { session.sendClientContent({ turns: [{ role: "user", parts: [{ text: hello }] }], turnComplete: true }); } catch(e2) {} }
   } catch(e) {
     console.error(e);
     connecting = false;
@@ -468,7 +488,7 @@ function stop(){
   if (mic){ try { mic.stream.getTracks().forEach(t => t.stop()); mic.ctx.close(); } catch(e) {} mic = null; }
   if (head && avatarReady){ try { head.streamStop(); } catch(e) {} }
   try { wakeLock && wakeLock.release(); } catch(e) {} wakeLock = null;
-  clearInterval(tick); $("timer").hidden = true;
+  clearInterval(tick); $("timer").hidden = true; $("diag").hidden = true; model = "";
   closeTurn();
   $("big").classList.remove("on"); $("big").setAttribute("aria-label", "Parler avec Lena"); $("bigLabel").textContent = "Parler avec Lena";
   $("mute").style.visibility = "hidden"; muted = false; $("mute").setAttribute("aria-pressed", "false"); $("topics").hidden = false;
