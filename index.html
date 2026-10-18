@@ -296,16 +296,41 @@ function styleLena(){
     });
   } catch(e) { console.warn("Style non appliqué", e); }
 }
-/* Les lèvres suivent la voix : HeadAudio écoute le son de Lena et anime la bouche */
+/* Les lèvres suivent la voix. Deux méthodes : HeadAudio reconnaît les sons ; si elle ne réagit pas
+   (c'est le cas sur certains iPhone), la bouche s'ouvre selon le volume de la voix. */
+let analyser = null, ampBuf = null, level = 0, lastHA = 0, phase = 0;
+function setShape(k, v){ if (head && head.mtAvatar[k]) Object.assign(head.mtAvatar[k], { newvalue: v, needsUpdate: true }); }
+function mouthByVolume(dt){
+  if (!analyser) return;
+  analyser.getFloatTimeDomainData(ampBuf);
+  let q = 0; for (let i = 0; i < ampBuf.length; i++) q += ampBuf[i] * ampBuf[i];
+  const rms = Math.sqrt(q / ampBuf.length);
+  const target = Math.max(0, Math.min(1, (rms - 0.008) * 9));
+  level += (target - level) * Math.min(1, dt / 60);
+  if (performance.now() - lastHA < 400) return;
+  phase += dt / 1000 * 9;
+  const o = (Math.sin(phase) + 1) / 2;
+  setShape("jawOpen", level * 0.35);
+  setShape("viseme_aa", level * (0.55 - 0.25 * o));
+  setShape("viseme_O", level * 0.35 * o);
+  setShape("viseme_E", level * 0.2 * (1 - o));
+}
 async function setupLips(){
-  if (headaudio || !head) return;
+  if (!head) return;
+  if (!analyser){
+    try {
+      analyser = audioCtx.createAnalyser(); analyser.fftSize = 1024; ampBuf = new Float32Array(analyser.fftSize);
+      head.audioSpeechGainNode.connect(analyser);
+      head.opt.update = dt => { if (headaudio) { try { headaudio.update(dt); } catch(e) {} } mouthByVolume(dt); };
+    } catch(e) { console.warn("Bouche au volume indisponible", e); }
+  }
+  if (headaudio) return;
   try {
     await head.audioCtx.audioWorklet.addModule(HA_WORKLET);
     headaudio = new HeadAudio(head.audioCtx, { processorOptions: {}, parameterData: { vadGateActiveDb: -40, vadGateInactiveDb: -60 } });
     await headaudio.loadModel(HA_MODEL);
     head.audioSpeechGainNode.connect(headaudio);
-    headaudio.onvalue = (key, value) => { if (head.mtAvatar[key]) Object.assign(head.mtAvatar[key], { newvalue: value, needsUpdate: true }); };
-    head.opt.update = headaudio.update.bind(headaudio);
+    headaudio.onvalue = (key, value) => { if (value > 0.05) lastHA = performance.now(); setShape(key, value); };
   } catch(e) { console.warn("Lèvres non synchronisées", e); }
 }
 
