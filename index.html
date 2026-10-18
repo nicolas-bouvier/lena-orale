@@ -499,7 +499,6 @@ renderTopics();
 fillSettings();
 loadAvatar();
 if (!cfg.apiKey) setTimeout(() => { if (!$("settings").open) { fillSettings(); $("settings").showModal(); } }, 600);
-else if (navigator.standalone === false || !window.matchMedia("(display-mode: standalone)").matches) {} /* rien */
 </script>
 </body>
 </html>
