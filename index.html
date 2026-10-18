@@ -149,6 +149,11 @@ a{color:var(--accent)}
         <li>Collez-la ici. Elle reste sur ce téléphone, nulle part ailleurs.</li>
       </ol>
     </div>
+    <div class="field"><span class="lab">Le visage de Lena</span>
+      <span class="meta" id="avatarState">Lena par défaut.</span>
+      <div class="row"><label class="btn ghost" for="avatarFile" style="cursor:pointer">Charger mon avatar (.glb)</label><input id="avatarFile" type="file" accept=".glb,model/gltf-binary" hidden><button class="btn ghost" type="button" id="avatarReset" hidden>Revenir à Lena par défaut</button></div>
+      <span class="meta">Un avatar créé sur Avaturn à partir d’une photo. Il reste dans ce téléphone et n’est envoyé nulle part.</span>
+    </div>
     <div class="field"><label for="pname">Votre prénom</label><input id="pname" autocomplete="given-name" placeholder="Lena vous appellera ainsi"></div>
     <div class="field"><label for="voice">Voix de Lena</label>
       <select id="voice"><option value="Aoede">Aoede · douce et chaleureuse</option><option value="Kore">Kore · claire et posée</option><option value="Leda">Leda · jeune et vive</option><option value="Zephyr">Zephyr · lumineuse</option></select></div>
@@ -198,6 +203,15 @@ $("topics").addEventListener("click", e => {
   cfg.topic = b.dataset.t; saveCfg(); renderTopics();
 });
 
+/* ---------- Avatar personnel : gardé dans le téléphone (IndexedDB), jamais envoyé ---------- */
+const idb = {
+  open(){ return new Promise((res, rej) => { const r = indexedDB.open("lena-orale", 1); r.onupgradeneeded = () => r.result.createObjectStore("files"); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); },
+  async run(mode, fn){ const db = await this.open(); return new Promise((res, rej) => { const st = db.transaction("files", mode).objectStore("files"); const q = fn(st); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); },
+  get(k){ return this.run("readonly", st => st.get(k)); },
+  set(k, v){ return this.run("readwrite", st => st.put(v, k)); },
+  del(k){ return this.run("readwrite", st => st.delete(k)); }
+};
+
 /* ---------- Lena en 3D ---------- */
 let head = null, headaudio = null, avatarReady = false;
 async function loadAvatar(){
@@ -206,10 +220,16 @@ async function loadAvatar(){
       ttsEndpoint: "N/A", lipsyncModules: ["de"], lipsyncLang: "de",
       cameraView: "upper", cameraRotateEnable: false, avatarMood: "happy", modelFPS: 30
     });
-    await head.showAvatar({ url: AVATAR_URL, body: "F", avatarMood: "happy", lipsyncLang: "de" }, ev => {
+    let custom = null; try { custom = await idb.get("avatar"); } catch(e) {}
+    const opts = custom
+      ? { url: URL.createObjectURL(custom), body: "F", avatarMood: "happy", lipsyncLang: "de", baseline: { headRotateX: -0.05, eyeBlinkLeft: 0.15, eyeBlinkRight: 0.15 } }
+      : { url: AVATAR_URL, body: "F", avatarMood: "happy", lipsyncLang: "de" };
+    $("avatarState").textContent = custom ? "Votre avatar personnel (gardé dans ce téléphone)." : "Lena par défaut.";
+    $("avatarReset").hidden = !custom;
+    await head.showAvatar(opts, ev => {
       if (ev.lengthComputable) $("loadPct").textContent = Math.min(99, Math.round(ev.loaded / ev.total * 100)) + " %";
     });
-    greenEyes(); styleLena();
+    if (!custom){ greenEyes(); styleLena(); }
     $("loading").hidden = true;
     avatarReady = true;
   } catch(e) {
@@ -461,6 +481,14 @@ $("openSettings").addEventListener("click", () => { fillSettings(); $("settings"
 $("settingsForm").addEventListener("submit", () => {
   cfg.apiKey = $("apikey").value.trim(); cfg.name = $("pname").value.trim(); cfg.voice = $("voice").value; cfg.level = $("level").value; cfg.headset = $("headset").checked; saveCfg();
 });
+$("avatarFile").addEventListener("change", async e => {
+  const f = e.target.files && e.target.files[0]; if (!f) return;
+  const head4 = new Uint8Array(await f.slice(0, 4).arrayBuffer());
+  if (String.fromCharCode(...head4) !== "glTF"){ $("avatarState").textContent = "Ce fichier n’est pas un avatar .glb. Exportez-le depuis Avaturn au format GLB."; return; }
+  try { await idb.set("avatar", f); $("avatarState").textContent = "Avatar enregistré. Lena va se recharger…"; setTimeout(() => location.reload(), 700); }
+  catch(err) { $("avatarState").textContent = "Impossible d’enregistrer l’avatar sur ce téléphone (" + (err && err.message || "stockage refusé") + ")."; }
+});
+$("avatarReset").addEventListener("click", async () => { try { await idb.del("avatar"); } catch(e) {} location.reload(); });
 $("forgetKey").addEventListener("click", () => { cfg.apiKey = ""; saveCfg(); $("apikey").value = ""; });
 
 renderTopics();
