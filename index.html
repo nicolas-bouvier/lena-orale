@@ -233,9 +233,12 @@ svg.i{width:22px;height:22px;flex:none}
 .lena.face img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 22%;transform:scale(1.25);transform-origin:50% 30%}
 .lena.face .f-talk,.lena.face .f-blink{opacity:0}
 .lena.face .f-blink{animation:faceblink 5.2s infinite}
-@keyframes faceblink{0%,95%,100%{opacity:0}96%,98.5%{opacity:1}}
-.lena.face[data-state="speaking"] .f-talk{animation:faceflap .34s infinite steps(1)}
-@keyframes faceflap{0%{opacity:1}50%{opacity:0}}
+@keyframes faceblink{0%,94.5%,100%{opacity:0}96%,97.5%{opacity:1}}
+.lena.face[data-state="speaking"] .f-talk{animation:faceflap .38s infinite alternate ease-in-out}
+@keyframes faceflap{0%{opacity:.1}100%{opacity:.9}}
+.lena.face[data-state="speaking"] img{animation:facesway 2.4s infinite ease-in-out}
+.lena.face[data-state="speaking"] .f-talk{animation:faceflap .38s infinite alternate ease-in-out,facesway 2.4s infinite ease-in-out}
+@keyframes facesway{0%,100%{transform:scale(1.25) rotate(0)}50%{transform:scale(1.25) rotate(.8deg)}}
 .lena.face .dots{position:absolute;right:8%;top:8%;display:flex;gap:3px;opacity:0}
 .lena.face .dots i{width:7px;height:7px;border-radius:50%;background:var(--gold);animation:dot 1.2s infinite}
 .lena.face[data-state="thinking"] .dots{opacity:1}

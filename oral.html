@@ -51,9 +51,9 @@ header h1 em{color:var(--accent)}
 #avatar{position:absolute;inset:0}
 #avatar canvas{display:block}
 .stage.light{background:#FFFFFF}
-#avatar .face{position:absolute;inset:0}
+#avatar .face{position:absolute;inset:-3%;transform-origin:50% 85%;will-change:transform}
 #avatar .face img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 18%}
-#avatar .face .f-talk,#avatar .face .f-blink{opacity:0}
+#avatar .face .f-talk,#avatar .face .f-blink{opacity:0;will-change:opacity}
 #avatar .face[data-frame="talk"] .f-talk{opacity:1}
 #avatar .face[data-frame="blink"] .f-blink{opacity:1}
 #avatar .lena-art{position:absolute;left:50%;bottom:0;transform:translateX(-50%);height:100%;width:auto;max-width:100%}
@@ -500,7 +500,7 @@ function voiceOut(){
   out.connect(outAn); outAn.connect(audioCtx.destination);
   return out;
 }
-let mLevel = 0, mPhase = 0, mLast = 0, nextBlink = 0, blinkUntil = 0;
+let mLevel = 0, mPhase = 0, mLast = 0, nextBlink = 0, blinkUntil = 0, mOpen = 0, mBlink = 0, mSway = 0, faceImgs = null;
 /* L'animation suit l'affichage ; si le téléphone le ralentit, une minuterie prend le relais */
 setInterval(() => { if (drawn && performance.now() - mLast > 200) mouthTick(performance.now()); }, 60);
 function mouthLoop(t){
@@ -513,13 +513,26 @@ function mouthTick(t){
   let target = 0;
   if (outAn){ outAn.getFloatTimeDomainData(outBuf); let q = 0; for (let i = 0; i < outBuf.length; i++) q += outBuf[i] * outBuf[i]; target = Math.max(0, Math.min(1, (Math.sqrt(q / outBuf.length) - 0.006) * 10)); }
   mLevel += (target - mLevel) * Math.min(1, dt / 40);
-  const talking = mLevel > 0.04;
-  mPhase += dt / 1000 * 2 * Math.PI * 4.5;
-  const open = talking && (mLevel > 0.45 || Math.sin(mPhase) > -0.2);
+  const talking = mLevel > 0.03;
+  mPhase += dt / 1000 * 2 * Math.PI * 2.6;
+  /* La bouche : un fondu entre le sourire et la bouche ouverte, selon le volume, avec le rythme des syllabes */
+  const want = talking ? Math.min(1, mLevel * 1.35) * (0.5 + 0.5 * Math.abs(Math.sin(mPhase))) : 0;
+  mOpen += (want - mOpen) * Math.min(1, dt / 55);
+  /* Les yeux : un clignement en fondu rapide, de temps en temps */
   if (!nextBlink) nextBlink = t + 2500 + Math.random() * 3500;
-  if (t > nextBlink){ blinkUntil = t + 140; nextBlink = t + 2500 + Math.random() * 3500; }
-  const blink = t < blinkUntil && !open;
-  drawn.dataset.frame = blink ? "blink" : open ? "talk" : "smile";
+  if (t > nextBlink){ blinkUntil = t + 160; nextBlink = t + 2500 + Math.random() * 3500; }
+  const blinkWant = t < blinkUntil && mOpen < 0.25 ? 1 : 0;
+  mBlink += (blinkWant - mBlink) * Math.min(1, dt / 35);
+  /* La tête : une respiration douce, un léger balancement quand elle parle */
+  const s1 = t / 1000;
+  mSway += ((talking ? 1 : 0) - mSway) * Math.min(1, dt / 400);
+  const rot = Math.sin(s1 * 0.7) * 0.35 + mSway * Math.sin(s1 * 2.1) * 0.6;
+  const dy = Math.sin(s1 * 1.6) * 1.2 + mSway * Math.sin(s1 * 3.3) * 0.8;
+  const sc = 1 + Math.sin(s1 * 1.6) * 0.003;
+  if (!faceImgs) faceImgs = { talk: drawn.querySelector(".f-talk"), blink: drawn.querySelector(".f-blink") };
+  faceImgs.talk.style.opacity = mOpen.toFixed(3);
+  faceImgs.blink.style.opacity = mBlink.toFixed(3);
+  drawn.style.transform = `translateY(${dy.toFixed(2)}px) rotate(${rot.toFixed(3)}deg) scale(${sc.toFixed(4)})`;
 }
 function stopVoice(){ sources.forEach(x => { try { x.stop(); } catch(e) {} }); sources = []; fbTime = 0; }
 function playFallback(buf){
