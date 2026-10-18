@@ -312,6 +312,9 @@ function styleLena(){
    (c'est le cas sur certains iPhone), la bouche s'ouvre selon le volume de la voix. */
 let analyser = null, ampBuf = null, level = 0, lastHA = 0, phase = 0;
 function setShape(k, v){ if (head && head.mtAvatar[k]) Object.assign(head.mtAvatar[k], { newvalue: v, needsUpdate: true }); }
+/* Consigne prioritaire (« realtime ») : elle passe devant les animations de la bibliothèque ; null la relâche */
+function holdShape(k, v){ if (head && head.mtAvatar[k]) Object.assign(head.mtAvatar[k], { realtime: v, needsUpdate: true }); }
+let mouthHeld = false;
 function mouthByVolume(dt){
   if (!analyser) return;
   analyser.getFloatTimeDomainData(ampBuf);
@@ -319,20 +322,24 @@ function mouthByVolume(dt){
   const rms = Math.sqrt(q / ampBuf.length);
   const target = Math.max(0, Math.min(1, (rms - 0.008) * 9));
   level += (target - level) * Math.min(1, dt / 60);
-  if (performance.now() - lastHA < 400) return;
+  const keys = ["jawOpen", "viseme_aa", "viseme_O", "viseme_E"];
+  if (performance.now() - lastHA < 400 || level < 0.02){
+    if (mouthHeld){ keys.forEach(k => holdShape(k, null)); mouthHeld = false; }
+    return;
+  }
   phase += dt / 1000 * 9;
   const o = (Math.sin(phase) + 1) / 2;
-  setShape("jawOpen", level * 0.35);
-  setShape("viseme_aa", level * (0.55 - 0.25 * o));
-  setShape("viseme_O", level * 0.35 * o);
-  setShape("viseme_E", level * 0.2 * (1 - o));
+  holdShape("jawOpen", level * 0.35);
+  holdShape("viseme_aa", level * (0.55 - 0.25 * o));
+  holdShape("viseme_O", level * 0.35 * o);
+  holdShape("viseme_E", level * 0.2 * (1 - o));
+  mouthHeld = true;
 }
 async function setupLips(){
   if (!head) return;
   if (!analyser){
     try {
-      analyser = audioCtx.createAnalyser(); analyser.fftSize = 1024; ampBuf = new Float32Array(analyser.fftSize);
-      head.audioSpeechGainNode.connect(analyser);
+      analyser = head.audioAnalyzerNode; ampBuf = new Float32Array(analyser.fftSize);
       head.opt.update = dt => { if (headaudio) { try { headaudio.update(dt); } catch(e) {} } mouthByVolume(dt); };
     } catch(e) { console.warn("Bouche au volume indisponible", e); }
   }
@@ -342,6 +349,7 @@ async function setupLips(){
     headaudio = new HeadAudio(head.audioCtx, { processorOptions: {}, parameterData: { vadGateActiveDb: -40, vadGateInactiveDb: -60 } });
     await headaudio.loadModel(HA_MODEL);
     head.audioSpeechGainNode.connect(headaudio);
+    try { const z = audioCtx.createGain(); z.gain.value = 0; headaudio.connect(z); z.connect(audioCtx.destination); } catch(e) {}
     headaudio.onvalue = (key, value) => { if (value > 0.05) lastHA = performance.now(); setShape(key, value); };
   } catch(e) { console.warn("Lèvres non synchronisées", e); }
 }
