@@ -1,7 +1,7 @@
 {
-  "name": "Lena à l'oral",
-  "short_name": "Lena",
-  "description": "Parler allemand avec Lena, à voix haute.",
+  "name": "Deutsch mit Selina",
+  "short_name": "Selina",
+  "description": "Apprendre l'allemand avec Selina.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

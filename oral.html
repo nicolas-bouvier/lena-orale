@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Lena à l'oral</title>
-<meta name="description" content="Parler allemand avec Lena, à voix haute.">
+<title>Selina à l'oral</title>
+<meta name="description" content="Parler allemand avec Selina, à voix haute.">
 <meta name="theme-color" content="#04346B">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Lena">
+<meta name="apple-mobile-web-app-title" content="Selina">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,600&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-/* Lena à l'oral : charte Gemelli (crème, bleu, bleu nuit, or). Une colonne de téléphone : Lena en 3D en haut, le texte de la conversation au milieu, le grand bouton en bas. */
+/* Selina à l'oral : charte Gemelli (crème, bleu, bleu nuit, or). Une colonne de téléphone : Selina en 3D en haut, le texte de la conversation au milieu, le grand bouton en bas. */
 :root{
   --paper:#F7F2EA; --sheet:#FFFFFF; --sheet2:#F1EADC; --ink:#1C1A18; --muted:#6E6660; --line:#E6DFD2;
   --accent:#014A97; --accent-ink:#F3E4C4; --accent-soft:#E7EFF8; --night:#04346B; --gold:#B8935A; --gold-l:#E3C995; --gold-soft:#F6EEDD;
@@ -46,10 +46,28 @@ header h1 em{color:var(--accent)}
 .ico{width:42px;height:42px;border-radius:50%;border:0;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;padding:0}
 .ico svg{width:20px;height:20px}
 
-/* La scène de Lena */
+/* La scène de Selina */
 .stage{position:relative;flex:0 0 auto;height:min(46vh,430px);border-radius:28px;overflow:hidden;background:radial-gradient(120% 90% at 20% 0%,var(--stage1) 0%,var(--stage2) 70%)}
 #avatar{position:absolute;inset:0}
 #avatar canvas{display:block}
+.stage.light{background:#FFFFFF}
+#avatar .face{position:absolute;inset:0}
+#avatar .face img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 18%}
+#avatar .face .f-talk,#avatar .face .f-blink{opacity:0}
+#avatar .face[data-frame="talk"] .f-talk{opacity:1}
+#avatar .face[data-frame="blink"] .f-blink{opacity:1}
+#avatar .lena-art{position:absolute;left:50%;bottom:0;transform:translateX(-50%);height:100%;width:auto;max-width:100%}
+.lena-art .eye{transform-box:fill-box;transform-origin:center;animation:blink 5.5s infinite}
+.lena-art .eye.r{animation-delay:.04s}
+@keyframes blink{0%,93%,100%{transform:scaleY(1)}95%{transform:scaleY(.12)}}
+.lena-art .head{transform-box:view-box;transform-origin:200px 300px;transition:transform .3s}
+.lena-art[data-state="speaking"] .head{animation:sway 2.6s infinite ease-in-out}
+@keyframes sway{0%,100%{transform:rotate(0)}50%{transform:rotate(1.2deg)}}
+.lena-art .body{animation:breathe 4s infinite ease-in-out;transform-box:view-box;transform-origin:200px 480px}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.008)}}
+.lena-art .mouth-open{opacity:0;transform-box:fill-box;transform-origin:50% 0}
+.lena-art .dots{opacity:0}
+.lena-art[data-state="thinking"] .dots{opacity:1}
 .loading{position:absolute;inset:0;display:grid;place-items:center;color:#F7F2EA;font-size:.95rem;text-align:center;padding:20px}
 .pill{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:999px;background:rgba(4,22,52,.62);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:#F7F2EA;font-weight:600;font-size:.9rem;white-space:nowrap}
 .pill i{width:9px;height:9px;border-radius:50%;background:#9DB7DA}
@@ -106,7 +124,7 @@ dialog::backdrop{background:rgba(4,22,52,.45)}
 .switch{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .switch input{width:22px;height:22px}
 a{color:var(--accent)}
-@media (prefers-reduced-motion: reduce){ .pill i{animation:none!important} }
+@media (prefers-reduced-motion: reduce){ .pill i,.lena-art .eye,.lena-art .head,.lena-art .body{animation:none!important} }
 </style>
 <script type="importmap">
 { "imports": {
@@ -122,29 +140,29 @@ a{color:var(--accent)}
 <div class="app">
   <header>
     <a class="ico back" href="./" aria-label="Retour à l’application"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></a>
-    <h1>Lena <em>à l'oral</em></h1>
+    <h1>Selina <em>à l'oral</em></h1>
     <button class="ico" id="openSettings" aria-label="Réglages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
   </header>
 
-  <section class="stage" aria-label="Lena">
+  <section class="stage" aria-label="Selina">
     <div id="avatar"></div>
-    <div class="loading" id="loading"><span>Lena arrive… <span id="loadPct"></span></span></div>
+    <div class="loading" id="loading"><span>Selina arrive… <span id="loadPct"></span></span></div>
     <span class="timer" id="timer" hidden>0:00</span>
     <span class="pill" id="pill"><i></i><span id="pillText">Prête à parler</span></span>
   </section>
 
   <div class="talk" id="talk" aria-live="polite">
-    <p class="hint" id="hint">Choisissez un sujet, touchez le bouton doré, et parlez à Lena en allemand, comme au téléphone. Le texte s’écrit ici.</p>
+    <p class="hint" id="hint">Choisissez un sujet, touchez le bouton doré, et parlez à Selina en allemand, comme au téléphone. Le texte s’écrit ici.</p>
   </div>
 
   <div class="diag" id="diag" hidden><span class="lvl"><i id="lvl"></i></span><span id="diagText">Micro</span></div>
   <div class="topics" id="topics" role="group" aria-label="Sujet"></div>
   <div class="controls">
     <button class="side" id="mute" aria-pressed="false" aria-label="Couper mon micro" style="visibility:hidden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg></button>
-    <button class="big" id="big" aria-label="Parler avec Lena"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg></button>
+    <button class="big" id="big" aria-label="Parler avec Selina"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg></button>
     <span class="side" aria-hidden="true" style="visibility:hidden"></span>
   </div>
-  <p class="label" id="bigLabel">Parler avec Lena</p>
+  <p class="label" id="bigLabel">Parler avec Selina</p>
 </div>
 
 <dialog id="settings">
@@ -159,20 +177,29 @@ a{color:var(--accent)}
         <li>Collez-la ici. Elle reste sur ce téléphone, nulle part ailleurs.</li>
       </ol>
     </div>
-    <div class="field"><span class="lab">Le visage de Lena</span>
-      <span class="meta" id="avatarState">Lena par défaut.</span>
-      <div class="row"><label class="btn ghost" for="avatarFile" style="cursor:pointer">Charger mon avatar (.glb)</label><input id="avatarFile" type="file" hidden><button class="btn ghost" type="button" id="avatarReset" hidden>Revenir à Lena par défaut</button></div>
+    <div class="field"><label for="face">Le visage de Selina</label>
+      <select id="face"><option value="images">Images de Selina (recommandé)</option><option value="3d">Personnage 3D</option></select></div>
+    <div class="field" id="fieldImg"><span class="lab">Les images de Selina</span>
+      <span class="meta" id="imgState">Chargez les trois images créées avec ChatGPT. Elles restent dans ce téléphone.</span>
+      <div class="row">
+        <label class="btn ghost" for="fSmile" style="cursor:pointer">1. Sourire</label><input id="fSmile" type="file" accept="image/*" hidden data-k="smile">
+        <label class="btn ghost" for="fTalk" style="cursor:pointer">2. Bouche ouverte</label><input id="fTalk" type="file" accept="image/*" hidden data-k="talk">
+        <label class="btn ghost" for="fBlink" style="cursor:pointer">3. Yeux fermés</label><input id="fBlink" type="file" accept="image/*" hidden data-k="blink">
+      </div></div>
+    <div class="field" id="field3d"><span class="lab">Avatar 3D personnel</span>
+      <span class="meta" id="avatarState">Selina par défaut.</span>
+      <div class="row"><label class="btn ghost" for="avatarFile" style="cursor:pointer">Charger mon avatar (.glb)</label><input id="avatarFile" type="file" hidden><button class="btn ghost" type="button" id="avatarReset" hidden>Revenir à Selina par défaut</button></div>
       <span class="meta">Un avatar créé sur Avaturn à partir d’une photo. Il reste dans ce téléphone et n’est envoyé nulle part.</span>
     </div>
-    <div class="field"><label for="pname">Votre prénom</label><input id="pname" autocomplete="given-name" placeholder="Lena vous appellera ainsi"></div>
-    <div class="field"><label for="voice">Voix de Lena</label>
+    <div class="field"><label for="pname">Votre prénom</label><input id="pname" autocomplete="given-name" placeholder="Selina vous appellera ainsi"></div>
+    <div class="field"><label for="voice">Voix de Selina</label>
       <select id="voice"><option value="Aoede">Aoede · douce et chaleureuse</option><option value="Kore">Kore · claire et posée</option><option value="Leda">Leda · jeune et vive</option><option value="Zephyr">Zephyr · lumineuse</option></select></div>
     <div class="field"><label for="model">Modèle vocal</label>
       <select id="model"><option value="auto">Automatique (le premier qui marche)</option><option value="gemini-3.8-live">Gemini 3.8 Live</option><option value="gemini-3.1-flash-live-preview">Gemini 3.1 Flash Live</option><option value="gemini-2.5-flash-native-audio-preview-12-2025">Gemini 2.5 Flash (audio natif)</option></select>
-      <span class="meta">À changer seulement si Lena ne répond pas.</span></div>
+      <span class="meta">À changer seulement si Selina ne répond pas.</span></div>
     <div class="field"><label for="level">Votre niveau</label>
       <select id="level"><option value="A1">A1 · débutant</option><option value="A2">A2 · élémentaire</option></select></div>
-    <label class="switch"><span><span class="lab">Avec un casque ou des écouteurs</span><br><span class="meta">Vous pourrez couper la parole à Lena. Sans casque, laissez décoché : le micro se met en pause quand elle parle, pour qu’elle ne s’entende pas elle-même.</span></span><input type="checkbox" id="headset"></label>
+    <label class="switch"><span><span class="lab">Avec un casque ou des écouteurs</span><br><span class="meta">Vous pourrez couper la parole à Selina. Sans casque, laissez décoché : le micro se met en pause quand elle parle, pour qu’elle ne s’entende pas elle-même.</span></span><input type="checkbox" id="headset"></label>
     <div class="row"><button class="btn" value="ok">Enregistrer</button><button class="btn ghost" type="button" id="forgetKey">Oublier la clé</button></div>
     <p class="meta">Voix et conversation : Gemini Live (Google, offre gratuite). Avatar : modèle « brunette » de Ready Player Me (CC BY-NC 4.0), animé par TalkingHead et HeadAudio (logiciels libres, licence MIT). Pour un usage personnel uniquement.</p>
   </form>
@@ -180,6 +207,7 @@ a{color:var(--accent)}
 
 <script type="module">
 import * as THREE from "three";
+
 import { TalkingHead } from "talkinghead";
 import { HeadAudio } from "headaudio";
 import { GoogleGenAI, Modality } from "genai";
@@ -192,7 +220,7 @@ const MODELS = ["gemini-2.5-flash-native-audio-preview-12-2025", "gemini-3.1-fla
 const TOPICS = [
   {id:"libre", fr:"Libre", de:"a relaxed chat about anything: the learner's day, their week, their plans"},
   {id:"vorstellen", fr:"Se présenter", de:"getting to know each other: name, where you come from, where you live, family, work"},
-  {id:"cafe", fr:"Au café", de:"a role-play in a café in Bern: Lena is the waitress, the learner orders and pays"},
+  {id:"cafe", fr:"Au café", de:"a role-play in a café in Bern: Selina is the waitress, the learner orders and pays"},
   {id:"tag", fr:"Ma journée", de:"the learner's typical day, from getting up to going to bed"},
   {id:"bern", fr:"À Berne", de:"life in Bern and in Switzerland: the town, the Aare, shopping at Migros or Coop, the weather, the trains"},
   {id:"glace", fr:"La glace", de:"ice cream (die Glace in Switzerland): flavours, the learner's gelato business, what customers like"}
@@ -200,10 +228,10 @@ const TOPICS = [
 
 /* ---------- Réglages, gardés sur ce téléphone uniquement ---------- */
 const KEY = "lena-orale.v1";
-let cfg = {apiKey:"", name:"", voice:"Aoede", level:"A1", headset:false, topic:"libre", model:"auto"};
+let cfg = {apiKey:"", name:"", voice:"Aoede", level:"A1", headset:false, topic:"libre", model:"auto", face:"images"};
 try { cfg = {...cfg, ...JSON.parse(localStorage.getItem(KEY) || "{}")}; } catch(e) {}
 const saveCfg = () => { try { localStorage.setItem(KEY, JSON.stringify(cfg)); } catch(e) {} };
-/* Ce que l'application sait déjà : prénom, niveau, traduction, ce que vous avez raconté à Lena */
+/* Ce que l'application sait déjà : prénom, niveau, traduction, ce que vous avez raconté à Selina */
 let app = {}; try { app = JSON.parse(localStorage.getItem("deutsch-mit-lena.v1") || "{}"); } catch(e) {}
 if (!cfg.name && app.profile && app.profile.name) cfg.name = app.profile.name;
 if (app.settings && app.settings.level) cfg.level = app.settings.level;
@@ -231,16 +259,34 @@ const idb = {
   del(k){ return this.run("readwrite", st => st.delete(k)); }
 };
 
-/* ---------- Un seul circuit audio : la voix de Lena et le micro ---------- */
+/* ---------- Un seul circuit audio : la voix de Selina et le micro ---------- */
 const AC = window.AudioContext || window.webkitAudioContext;
 const audioCtx = new AC();
 async function wakeAudio(){ try { if (audioCtx.state !== "running") await audioCtx.resume(); } catch(e) {} return audioCtx.state === "running"; }
 
-/* ---------- Lena en 3D ---------- */
+/* ---------- Selina en 3D ---------- */
 /* Un sourire au repos : les coins de la bouche relevés, les joues un peu plissées */
 const SMILE = { mouthSmileLeft: 0.55, mouthSmileRight: 0.55, cheekSquintLeft: 0.2, cheekSquintRight: 0.2, mouthDimpleLeft: 0.15, mouthDimpleRight: 0.15, eyeSquintLeft: 0.1, eyeSquintRight: 0.1 };
 let head = null, headaudio = null, avatarReady = false;
+let drawn = null;
+async function faceFiles(){ const f = {}; for (const k of ["smile","talk","blink"]) { try { const b = await idb.get("face_" + k); if (b) f[k] = b; } catch(e) {} } return f; }
+async function showImgState(){ const f = await faceFiles(); const n = Object.keys(f).length; $("imgState").textContent = n === 3 ? "Les trois images sont chargées." : `${n} image${n > 1 ? "s" : ""} sur 3 chargée${n > 1 ? "s" : ""}. Chargez les trois images créées avec ChatGPT. Elles restent dans ce téléphone.`; }
 async function loadAvatar(){
+  if (cfg.face !== "3d"){
+    head = null; avatarReady = false;
+    const f = await faceFiles();
+    if (f.smile && f.talk && f.blink){
+      const u = k => URL.createObjectURL(f[k]);
+      $("avatar").innerHTML = `<div class="face"><img class="f-smile" src="${u("smile")}" alt="Selina"><img class="f-talk" src="${u("talk")}" alt=""><img class="f-blink" src="${u("blink")}" alt=""></div>`;
+      drawn = $("avatar").querySelector(".face");
+      document.querySelector(".stage").classList.add("light");
+      $("loading").hidden = true;
+    } else {
+      $("loading").innerHTML = "<span>Chargez les images de Selina :<br>roue dentée › Les images de Selina.<br>La conversation marche déjà.</span>";
+    }
+    requestAnimationFrame(mouthLoop);
+    return;
+  }
   try {
     head = new TalkingHead($("avatar"), {
       ttsEndpoint: "N/A", lipsyncModules: ["de"], lipsyncLang: "de", audioCtx,
@@ -250,20 +296,20 @@ async function loadAvatar(){
     const opts = custom
       ? { url: URL.createObjectURL(custom), body: "F", avatarMood: "happy", lipsyncLang: "de", baseline: { headRotateX: -0.05, eyeBlinkLeft: 0.12, eyeBlinkRight: 0.12, ...SMILE } }
       : { url: AVATAR_URL, body: "F", avatarMood: "happy", lipsyncLang: "de", baseline: { ...SMILE } };
-    $("avatarState").textContent = custom ? "Votre avatar personnel (gardé dans ce téléphone)." : "Lena par défaut.";
+    $("avatarState").textContent = custom ? "Votre avatar personnel (gardé dans ce téléphone)." : "Selina par défaut.";
     $("avatarReset").hidden = !custom;
     await head.showAvatar(opts, ev => {
       if (ev.lengthComputable) $("loadPct").textContent = Math.min(99, Math.round(ev.loaded / ev.total * 100)) + " %";
     });
-    greenEyes(); if (!custom) styleLena();
+    greenEyes(); if (!custom) styleSelina();
     $("loading").hidden = true;
     avatarReady = true;
   } catch(e) {
     console.error(e);
-    $("loading").textContent = "Lena n’a pas pu s’afficher sur cet appareil. La conversation marche quand même.";
+    $("loading").textContent = "Selina n’a pas pu s’afficher sur cet appareil. La conversation marche quand même.";
   }
 }
-/* Lena a les yeux verts : on recolore l'iris de la texture des yeux (le blanc et la pupille ne bougent pas) */
+/* Selina a les yeux verts : on recolore l'iris de la texture des yeux (le blanc et la pupille ne bougent pas) */
 function greenEyes(){
   try {
     const root = head.scene || head.armature; const done = new Set();
@@ -293,8 +339,8 @@ function greenEyes(){
     });
   } catch(e) { console.warn("Yeux verts non appliqués", e); }
 }
-/* Le style de Lena : sans lunettes, un pull camel uni, des cheveux châtain foncé */
-function styleLena(){
+/* Le style de Selina : sans lunettes, un pull camel uni, des cheveux châtain foncé */
+function styleSelina(){
   try {
     const root = head.scene || head.armature;
     root.traverse(o => {
@@ -357,7 +403,7 @@ async function setupLips(){
 /* ---------- La conversation (Gemini Live) ---------- */
 let speakUntil = 0, chunks = 0, model = "", lastModel = "", lastMsg = "";
 let connecting = false, live = false, session = null, mic = null, muted = false, lenaSpeaking = false, startedAt = 0, tick = null, wakeLock = null;
-let curLena = null, curMe = null;
+let curSelina = null, curMe = null;
 
 function diag(extra){
   $("diag").hidden = !live;
@@ -369,7 +415,7 @@ function setPill(state, text){
 function instructions(){
   const t = TOPICS.find(x => x.id === cfg.topic) || TOPICS[0];
   const a1 = cfg.level !== "A2";
-  return `You are Lena, 34, a warm, cheerful and curious German teacher. You grew up in Bern, studied in Munich, and live in Bern again, in the Länggasse, with your cat Brezel; you go everywhere by Velo along the Aare and hike in the Bernese Oberland. You are having a spoken conversation lesson with an adult French speaker who lives near Bern and is learning German (level ${a1 ? "A1, a beginner" : "A2"}).${cfg.name ? ` The learner's first name is ${cfg.name}.` : " Ask the learner's first name once at the start."}
+  return `You are Selina, 34, a warm, cheerful and curious German teacher. You grew up in Bern, studied in Munich, and live in Bern again, in the Länggasse, with your cat Brezel; you go everywhere by Velo along the Aare and hike in the Bernese Oberland. You are having a spoken conversation lesson with an adult French speaker who lives near Bern and is learning German (level ${a1 ? "A1, a beginner" : "A2"}).${cfg.name ? ` The learner's first name is ${cfg.name}.` : " Ask the learner's first name once at the start."}
 ${facts ? `What the learner already told you in earlier lessons: ${facts}. Never ask again about these.
 ` : ""}Topic of this conversation: ${t.de}.
 How to speak:
@@ -388,7 +434,7 @@ function addMsg(who, text){
 }
 function appendTo(which, text){
   if (!text) return;
-  if (which === "lena"){ if (!curLena) curLena = addMsg("lena", ""); curLena.textContent += text; }
+  if (which === "lena"){ if (!curSelina) curSelina = addMsg("lena", ""); curSelina.textContent += text; }
   else { if (!curMe) curMe = addMsg("me", ""); curMe.textContent += text; }
   $("talk").scrollTop = $("talk").scrollHeight;
 }
@@ -408,7 +454,7 @@ async function translate(el){
   } catch(e) {}
 }
 function closeTurn(which){
-  if (which !== "me" && curLena){ curLena.classList.remove("live"); curLena.textContent = curLena.textContent.replace(/ß/g, "ss").trim(); translate(curLena); curLena = null; }
+  if (which !== "me" && curSelina){ curSelina.classList.remove("live"); curSelina.textContent = curSelina.textContent.replace(/ß/g, "ss").trim(); translate(curSelina); curSelina = null; }
   if (which !== "lena" && curMe){ curMe.classList.remove("live"); curMe.textContent = curMe.textContent.trim(); curMe = null; }
 }
 function showError(text){
@@ -427,13 +473,13 @@ function onMessage(msg){
   lastMsg = Object.keys(msg).filter(k => msg[k] !== undefined).join(",") + (msg.serverContent ? ":" + Object.keys(msg.serverContent).join("+") : "");
   diag();
   const sc = msg.serverContent; if (!sc) { if (msg.goAway) showError("La séance arrive à sa limite de 15 minutes : touchez le bouton pour en recommencer une."); return; }
-  if (sc.interrupted){ if (head) head.streamInterrupt(); lenaSpeaking = false; closeTurn("lena"); setPill("listening", "Je vous écoute…"); }
-  if (sc.inputTranscription?.text){ if (curLena) closeTurn("lena"); appendTo("me", sc.inputTranscription.text); }
+  if (sc.interrupted){ if (head) head.streamInterrupt(); stopVoice(); lenaSpeaking = false; closeTurn("lena"); setPill("listening", "Je vous écoute…"); }
+  if (sc.inputTranscription?.text){ if (curSelina) closeTurn("lena"); appendTo("me", sc.inputTranscription.text); }
   const parts = sc.modelTurn?.parts || [];
   for (const p of parts){
     if (p.inlineData?.data){
       if (curMe) closeTurn("me");
-      lenaSpeaking = true; setPill("speaking", "Lena parle…");
+      lenaSpeaking = true; setPill("speaking", "Selina parle…");
       const buf = unb64(p.inlineData.data);
       const dur = buf.byteLength / 2 / 24000 * 1000;
       speakUntil = Math.max(speakUntil, Date.now()) + dur;
@@ -447,15 +493,43 @@ function onMessage(msg){
   if (sc.turnComplete){ if (head && avatarReady) head.streamNotifyEnd(); closeTurn("lena"); }
 }
 /* Si l'avatar n'a pas pu se charger, la voix passe directement par le haut-parleur */
-let fbCtx = null, fbTime = 0;
+let fbCtx = null, fbTime = 0, out = null, outAn = null, outBuf = null, sources = [];
+function voiceOut(){
+  if (out) return out;
+  out = audioCtx.createGain(); outAn = audioCtx.createAnalyser(); outAn.fftSize = 1024; outBuf = new Float32Array(outAn.fftSize);
+  out.connect(outAn); outAn.connect(audioCtx.destination);
+  return out;
+}
+let mLevel = 0, mPhase = 0, mLast = 0, nextBlink = 0, blinkUntil = 0;
+/* L'animation suit l'affichage ; si le téléphone le ralentit, une minuterie prend le relais */
+setInterval(() => { if (drawn && performance.now() - mLast > 200) mouthTick(performance.now()); }, 60);
+function mouthLoop(t){
+  requestAnimationFrame(mouthLoop);
+  mouthTick(t);
+}
+function mouthTick(t){
+  if (!drawn) return;
+  const dt = Math.min(100, t - (mLast || t)); mLast = t;
+  let target = 0;
+  if (outAn){ outAn.getFloatTimeDomainData(outBuf); let q = 0; for (let i = 0; i < outBuf.length; i++) q += outBuf[i] * outBuf[i]; target = Math.max(0, Math.min(1, (Math.sqrt(q / outBuf.length) - 0.006) * 10)); }
+  mLevel += (target - mLevel) * Math.min(1, dt / 40);
+  const talking = mLevel > 0.04;
+  mPhase += dt / 1000 * 2 * Math.PI * 4.5;
+  const open = talking && (mLevel > 0.45 || Math.sin(mPhase) > -0.2);
+  if (!nextBlink) nextBlink = t + 2500 + Math.random() * 3500;
+  if (t > nextBlink){ blinkUntil = t + 140; nextBlink = t + 2500 + Math.random() * 3500; }
+  const blink = t < blinkUntil && !open;
+  drawn.dataset.frame = blink ? "blink" : open ? "talk" : "smile";
+}
+function stopVoice(){ sources.forEach(x => { try { x.stop(); } catch(e) {} }); sources = []; fbTime = 0; }
 function playFallback(buf){
   fbCtx = audioCtx;
   const i16 = new Int16Array(buf), f = new Float32Array(i16.length);
   for (let i = 0; i < i16.length; i++) f[i] = i16[i] / 0x8000;
   const ab = fbCtx.createBuffer(1, f.length, 24000); ab.copyToChannel(f, 0);
-  const src = fbCtx.createBufferSource(); src.buffer = ab; src.connect(fbCtx.destination);
+  const src = fbCtx.createBufferSource(); src.buffer = ab; src.connect(voiceOut()); sources.push(src);
   fbTime = Math.max(fbTime, fbCtx.currentTime); src.start(fbTime); fbTime += ab.duration;
-  src.onended = () => { if (fbCtx.currentTime >= fbTime - 0.05){ lenaSpeaking = false; if (live) setPill("listening", "À vous, je vous écoute…"); } };
+  src.onended = () => { sources = sources.filter(x => x !== src); if (fbCtx.currentTime >= fbTime - 0.05){ lenaSpeaking = false; if (live) setPill("listening", "À vous, je vous écoute…"); } };
 }
 
 async function connect(){
@@ -534,7 +608,7 @@ async function start(){
     if (head) await setupLips();
     if (head && avatarReady){
       await head.streamStart({ sampleRate: 24000, lipsyncType: "visemes", lipsyncLang: "de", mood: "happy" },
-        () => { lenaSpeaking = true; setPill("speaking", "Lena parle…"); },
+        () => { lenaSpeaking = true; setPill("speaking", "Selina parle…"); },
         () => { lenaSpeaking = false; if (live) setPill("listening", "À vous, je vous écoute…"); });
     }
     mic = await startMic();
@@ -546,7 +620,7 @@ async function start(){
     startedAt = Date.now(); $("timer").hidden = false; tick = setInterval(() => { const s = Math.floor((Date.now() - startedAt) / 1000); $("timer").textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; }, 1000);
     $("big").classList.add("on"); $("big").setAttribute("aria-label", "Terminer la conversation"); $("bigLabel").textContent = "Terminer";
     $("mute").style.visibility = "visible"; $("topics").hidden = true;
-    setPill("listening", "Lena se prépare…");
+    setPill("listening", "Selina se prépare…");
     diag();
     const hello = "(The learner has just started the conversation. Greet them and begin.)";
     try { session.sendRealtimeInput({ text: hello }); }
@@ -559,15 +633,15 @@ async function start(){
     showError(/Permission|NotAllowed|denied/i.test(m) ? "Le micro est refusé. Autorisez-le pour cette page (Réglages de l’iPhone › Safari › Micro), puis réessayez." : closeMessage(m));
   } finally { $("big").disabled = false; }
 }
-/* Si l'iPhone a mis le son en pause, un toucher sur Lena le réveille */
+/* Si l'iPhone a mis le son en pause, un toucher sur Selina le réveille */
 function askForSound(){
-  setPill("err", "Touchez Lena pour activer le son");
+  setPill("err", "Touchez Selina pour activer le son");
   const stage = document.querySelector(".stage");
   const once = async () => { if (await wakeAudio()) { stage.removeEventListener("click", once); setPill("listening", "À vous, je vous écoute…"); diag(); } };
   stage.addEventListener("click", once);
 }
 function stop(){
-  live = false; lenaSpeaking = false;
+  live = false; lenaSpeaking = false; stopVoice();
   try { session && session.close(); } catch(e) {}
   session = null;
   if (mic){ try { mic.stream.getTracks().forEach(t => t.stop()); mic.src.disconnect(); mic.node.disconnect(); mic.sink.disconnect(); } catch(e) {} mic = null; }
@@ -575,7 +649,7 @@ function stop(){
   try { wakeLock && wakeLock.release(); } catch(e) {} wakeLock = null;
   clearInterval(tick); $("timer").hidden = true; $("diag").hidden = true; model = "";
   closeTurn();
-  $("big").classList.remove("on"); $("big").setAttribute("aria-label", "Parler avec Lena"); $("bigLabel").textContent = "Parler avec Lena";
+  $("big").classList.remove("on"); $("big").setAttribute("aria-label", "Parler avec Selina"); $("bigLabel").textContent = "Parler avec Selina";
   $("mute").style.visibility = "hidden"; muted = false; $("mute").setAttribute("aria-pressed", "false"); $("topics").hidden = false;
   setPill("", "Prête à parler");
 }
@@ -583,20 +657,27 @@ $("big").addEventListener("click", () => live ? stop() : start());
 $("mute").addEventListener("click", () => { muted = !muted; $("mute").setAttribute("aria-pressed", String(muted)); setPill(muted ? "err" : "listening", muted ? "Micro coupé" : "Je vous écoute…"); });
 
 /* ---------- Réglages ---------- */
-function fillSettings(){ $("model").value = cfg.model || "auto"; $("apikey").value = cfg.apiKey; $("pname").value = cfg.name; $("voice").value = cfg.voice; $("level").value = cfg.level; $("headset").checked = cfg.headset; }
+function fillSettings(){ if (cfg.face !== "3d") cfg.face = "images"; $("face").value = cfg.face; $("field3d").hidden = $("face").value !== "3d"; $("fieldImg").hidden = $("face").value === "3d"; showImgState(); $("model").value = cfg.model || "auto"; $("apikey").value = cfg.apiKey; $("pname").value = cfg.name; $("voice").value = cfg.voice; $("level").value = cfg.level; $("headset").checked = cfg.headset; }
 $("openSettings").addEventListener("click", () => { fillSettings(); $("settings").showModal(); });
 /* Chaque réglage s'enregistre dès qu'il est saisi (et avant le rechargement qui suit le choix d'un avatar) */
-function readSettings(){ cfg.model = $("model").value; cfg.apiKey = $("apikey").value.trim(); cfg.name = $("pname").value.trim(); cfg.voice = $("voice").value; cfg.level = $("level").value; cfg.headset = $("headset").checked; saveCfg(); }
+function readSettings(){ const before = cfg.face; cfg.face = $("face").value; $("field3d").hidden = cfg.face !== "3d"; $("fieldImg").hidden = cfg.face === "3d"; cfg.model = $("model").value; cfg.apiKey = $("apikey").value.trim(); cfg.name = $("pname").value.trim(); cfg.voice = $("voice").value; cfg.level = $("level").value; cfg.headset = $("headset").checked; saveCfg(); if (before && before !== cfg.face) setTimeout(() => location.reload(), 300); }
 $("settingsForm").addEventListener("submit", readSettings);
-["apikey","pname","voice","level","headset","model"].forEach(id => { $(id).addEventListener("input", readSettings); $(id).addEventListener("change", readSettings); });
+["apikey","pname","voice","level","headset","model","face"].forEach(id => { $(id).addEventListener("input", readSettings); $(id).addEventListener("change", readSettings); });
 $("avatarFile").addEventListener("change", async e => {
   readSettings();
   const f = e.target.files && e.target.files[0]; if (!f) return;
   const head4 = new Uint8Array(await f.slice(0, 4).arrayBuffer());
   if (String.fromCharCode(...head4) !== "glTF"){ $("avatarState").textContent = "Ce fichier n’est pas un avatar .glb. Exportez-le depuis Avaturn au format GLB."; return; }
-  try { await idb.set("avatar", f); $("avatarState").textContent = "Avatar enregistré. Lena va se recharger…"; setTimeout(() => location.reload(), 700); }
+  try { await idb.set("avatar", f); $("avatarState").textContent = "Avatar enregistré. Selina va se recharger…"; setTimeout(() => location.reload(), 700); }
   catch(err) { $("avatarState").textContent = "Impossible d’enregistrer l’avatar sur ce téléphone (" + (err && err.message || "stockage refusé") + ")."; }
 });
+["fSmile","fTalk","fBlink"].forEach(id => $(id).addEventListener("change", async e => {
+  const f = e.target.files && e.target.files[0]; if (!f) return;
+  if (!/^image\//.test(f.type || "image/")) { $("imgState").textContent = "Ce fichier n’est pas une image."; return; }
+  try { await idb.set("face_" + e.target.dataset.k, f); readSettings(); cfg.face = "images"; saveCfg(); await showImgState();
+    const all = await faceFiles(); if (all.smile && all.talk && all.blink){ $("imgState").textContent = "Les trois images sont chargées. Selina arrive…"; setTimeout(() => location.reload(), 700); } }
+  catch(err) { $("imgState").textContent = "Impossible d’enregistrer l’image (" + (err && err.message || "stockage refusé") + ")."; }
+}));
 $("avatarReset").addEventListener("click", async () => { try { await idb.del("avatar"); } catch(e) {} location.reload(); });
 $("forgetKey").addEventListener("click", () => { cfg.apiKey = ""; saveCfg(); $("apikey").value = ""; });
 

@@ -3,23 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="Apprendre l'allemand avec Lena : parcours, grammaire, cartes, et conversation à voix haute.">
+<meta name="description" content="Apprendre l'allemand avec Selina : parcours, grammaire, cartes, et conversation à voix haute.">
 <meta name="theme-color" content="#04346B">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Lena">
+<meta name="apple-mobile-web-app-title" content="Selina">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="icon-192.png">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
-<title>Deutsch mit Lena</title>
+<title>Deutsch mit Selina</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /* Layout : une application de téléphone à la charte Gemelli (crème, bleu Gemelli, bleu nuit, or ; Cormorant Garamond pour les titres, Figtree pour le texte).
-   Quatre onglets en bas (Accueil, Parcours, Mots, Réglages) ; l'accueil s'ouvre sur une carte bleu nuit avec Lena et la leçon du jour ;
-   la séance est plein écran, comme une messagerie : Lena en haut, la conversation au milieu, la réponse en bas. Sur ordinateur, la même colonne, plus large. */
+   Quatre onglets en bas (Accueil, Parcours, Mots, Réglages) ; l'accueil s'ouvre sur une carte bleu nuit avec Selina et la leçon du jour ;
+   la séance est plein écran, comme une messagerie : Selina en haut, la conversation au milieu, la réponse en bas. Sur ordinateur, la même colonne, plus large. */
 :root{
   --paper:#F7F2EA; --sheet:#FFFFFF; --sheet2:#F1EADC; --ink:#1C1A18; --muted:#6E6660; --line:#E6DFD2;
   --accent:#014A97; --accent-ink:#F3E4C4; --accent-soft:#E7EFF8; --night:#04346B;
@@ -198,7 +198,7 @@ svg.i{width:22px;height:22px;flex:none}
 .link:hover{color:var(--ink)}
 .danger{color:var(--bad)}
 
-/* Lena */
+/* Selina */
 .lena{display:block;overflow:visible;--lena-bg:var(--stage)}
 .lena .eye{transform-box:fill-box;transform-origin:center;animation:blink 5.5s infinite}
 .lena .eye.r{animation-delay:.04s}
@@ -215,6 +215,7 @@ svg.i{width:22px;height:22px;flex:none}
 @keyframes sway{0%,100%{transform:rotate(0)}50%{transform:rotate(1.4deg)}}
 @keyframes ring{0%{transform:scale(.96);opacity:.9}100%{transform:scale(1.06);opacity:0}}
 .lena .head{transform-box:view-box;transform-origin:100px 140px}
+.lena-art .head{transform-origin:200px 300px}
 .lena[data-state="thinking"] .iris{transform:translate(1.5px,-1.5px)}
 .lena .dots{opacity:0}
 .lena[data-state="thinking"] .dots{opacity:1}
@@ -226,6 +227,19 @@ svg.i{width:22px;height:22px;flex:none}
   .lena .eye,.lena .head,.lena .dots circle,.lena .ring{animation:none!important}
   .lena[data-state="speaking"] .mouth-open{animation:none;transform:scaleY(.6)}
 }
+
+/* Selina en images (sourire, bouche entrouverte, yeux fermés) */
+.lena.face{position:relative;border-radius:50%;overflow:hidden;background:#fff;box-shadow:0 0 0 3px var(--gold-l, #E3C995)}
+.lena.face img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 22%;transform:scale(1.25);transform-origin:50% 30%}
+.lena.face .f-talk,.lena.face .f-blink{opacity:0}
+.lena.face .f-blink{animation:faceblink 5.2s infinite}
+@keyframes faceblink{0%,95%,100%{opacity:0}96%,98.5%{opacity:1}}
+.lena.face[data-state="speaking"] .f-talk{animation:faceflap .34s infinite steps(1)}
+@keyframes faceflap{0%{opacity:1}50%{opacity:0}}
+.lena.face .dots{position:absolute;right:8%;top:8%;display:flex;gap:3px;opacity:0}
+.lena.face .dots i{width:7px;height:7px;border-radius:50%;background:var(--gold);animation:dot 1.2s infinite}
+.lena.face[data-state="thinking"] .dots{opacity:1}
+@media (prefers-reduced-motion: reduce){ .lena.face .f-blink,.lena.face .f-talk{animation:none!important} }
 
 /* Séance */
 .session{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;background:var(--paper);padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -489,7 +503,7 @@ a.btn{text-decoration:none}
 
 <script>
 /* Adaptateur : l'application a été écrite pour claude.ai (window.claude.use("sample")).
-   Ici, Lena réfléchit avec Gemini (offre gratuite), avec la clé gardée sur l'appareil. */
+   Ici, Selina réfléchit avec Gemini (offre gratuite), avec la clé gardée sur l'appareil. */
 (function(){
   const CFG = "lena-orale.v1", TEXT_MODEL = "gemini-2.5-flash";
   const read = () => { try { return JSON.parse(localStorage.getItem(CFG) || "{}"); } catch(e) { return {}; } };
@@ -639,8 +653,8 @@ function speak(text, opts = {}){
     const u = new SpeechSynthesisUtterance(clean);
     u.lang = "de-DE"; const v = pickVoice(); if (v) u.voice = v;
     u.rate = opts.slow ? 0.62 : state.settings.rate; u.pitch = 1;
-    u.onstart = () => setLena("speaking");
-    u.onend = u.onerror = () => { if (token === speakToken){ setLena(sess && sess.busy ? "thinking" : "idle"); opts.onend && opts.onend(); } };
+    u.onstart = () => setSelina("speaking");
+    u.onend = u.onerror = () => { if (token === speakToken){ setSelina(sess && sess.busy ? "thinking" : "idle"); opts.onend && opts.onend(); } };
     speechSynthesis.speak(u);
   }, 30);
 }
@@ -656,43 +670,43 @@ const UNITS_A1 = [
    plan:"Numbers 0 to 20, then the tens up to 100 (einundzwanzig = one-and-twenty: the unit comes first), phone numbers, asking prices (Wie viel kostet …? Das kostet … Euro), teuer and billig. Situation: asking prices at a market stall."},
   {id:"familie", fr:"La famille", de:"Das ist meine Familie", goal:"Présenter sa famille, dire l’âge, parler des siens.",
    words:["die Familie","mein Mann / meine Frau","der Sohn, die Tochter","die Eltern","Wie alt ist …?","Er ist … Jahre alt","Hast du Kinder?"],
-   plan:"Family members (Mutter, Vater, Eltern, Bruder, Schwester, Sohn, Tochter, Kinder, Mann, Frau), possessives mein / meine and dein / deine, age (Wie alt bist du? Ich bin … Jahre alt), haben (Ich habe zwei Kinder), verheiratet / ledig. Situation: Lena shows a photo of her family and the learner shows theirs."},
+   plan:"Family members (Mutter, Vater, Eltern, Bruder, Schwester, Sohn, Tochter, Kinder, Mann, Frau), possessives mein / meine and dein / deine, age (Wie alt bist du? Ich bin … Jahre alt), haben (Ich habe zwei Kinder), verheiratet / ledig. Situation: Selina shows a photo of her family and the learner shows theirs."},
   {id:"cafe", fr:"Au café", de:"Ich möchte einen Kaffee", goal:"Commander à boire et à manger, demander l’addition.",
    words:["Ich möchte …","einen Kaffee","ein Wasser","eine Cola","Noch etwas?","Die Rechnung, bitte","Zusammen oder getrennt?"],
-   plan:"Ordering in a café: Was möchten Sie? Ich möchte + accusative (einen Kaffee, eine Cola, ein Wasser), Noch etwas?, Die Rechnung bitte, zusammen oder getrennt, Das macht … Euro. Grammar focus: in the accusative only the masculine changes (ein Kaffee → einen Kaffee). Situation with Sie: Lena is the waitress, the learner is the guest."},
+   plan:"Ordering in a café: Was möchten Sie? Ich möchte + accusative (einen Kaffee, eine Cola, ein Wasser), Noch etwas?, Die Rechnung bitte, zusammen oder getrennt, Das macht … Euro. Grammar focus: in the accusative only the masculine changes (ein Kaffee → einen Kaffee). Situation with Sie: Selina is the waitress, the learner is the guest."},
   {id:"einkaufen", fr:"Faire les courses", de:"Ich brauche ein Kilo Tomaten", goal:"Acheter au marché ou au magasin : quantités, prix, paiement.",
    words:["Ich brauche …","ein Kilo","hundert Gramm","eine Flasche","Haben Sie …?","Das ist alles","Kann ich mit Karte zahlen?"],
-   plan:"Food shopping at a market or a supermarket: quantities (ein Kilo, ein Pfund, hundert Gramm, eine Flasche, eine Packung, ein Stück), fruit and vegetables, Ich brauche / Ich hätte gern / Haben Sie …?, prices in Euro und Cent, Das ist alles, Kann ich mit Karte zahlen? Accusative with ein / einen in context. Situation: Lena is the market seller."},
+   plan:"Food shopping at a market or a supermarket: quantities (ein Kilo, ein Pfund, hundert Gramm, eine Flasche, eine Packung, ein Stück), fruit and vegetables, Ich brauche / Ich hätte gern / Haben Sie …?, prices in Euro und Cent, Das ist alles, Kann ich mit Karte zahlen? Accusative with ein / einen in context. Situation: Selina is the market seller."},
   {id:"eis", fr:"Parlons glace", de:"Welche Sorte magst du?", goal:"Parler de parfums et de goûts, dire ce qu’on aime.",
    words:["das Eis","die Sorte","die Kugel","im Becher","in der Waffel","Ich mag …","lecker","Pistazie, Vanille, Schokolade"],
-   plan:"Ice cream: flavours (Vanille, Schokolade, Pistazie, Erdbeere, Zitrone, Haselnuss), eine Kugel / zwei Kugeln, im Becher oder in der Waffel, Ich mag … / Ich mag … nicht, Mein Lieblingseis ist …, lecker, süß. Connect it to the learner’s gelato business. Situation: the learner sells ice cream to Lena in a shop."},
+   plan:"Ice cream: flavours (Vanille, Schokolade, Pistazie, Erdbeere, Zitrone, Haselnuss), eine Kugel / zwei Kugeln, im Becher oder in der Waffel, Ich mag … / Ich mag … nicht, Mein Lieblingseis ist …, lecker, süß. Connect it to the learner’s gelato business. Situation: the learner sells ice cream to Selina in a shop."},
   {id:"woche", fr:"Les jours et l’heure", de:"Am Montag um zehn Uhr", goal:"Dire les jours et l’heure, fixer un moment.",
    words:["Montag … Sonntag","Wie spät ist es?","Es ist zehn Uhr","um halb drei","heute, morgen","am Wochenende"],
    plan:"Days of the week, a few months, the time (Wie spät ist es? Es ist zehn Uhr / halb drei / Viertel nach vier), um + time, am + day, heute, morgen, Wann …? Grammar focus: the verb in second position (Am Montag arbeite ich). Situation: finding a time for a meeting."},
   {id:"tag", fr:"Ma journée", de:"Ich stehe um sieben Uhr auf", goal:"Raconter sa journée type, du réveil au coucher.",
    words:["aufstehen","frühstücken","zur Arbeit fahren","zu Mittag essen","nach Hause gehen","zuerst …, dann …"],
-   plan:"Daily routine: separable verbs (aufstehen → ich stehe … auf, anfangen, einkaufen), frühstücken, zur Arbeit fahren, zu Mittag essen, nach Hause gehen, ins Bett gehen; zuerst, dann, danach; immer, oft, manchmal, nie; times. Situation: the learner describes a typical working day to a new colleague (Lena)."},
+   plan:"Daily routine: separable verbs (aufstehen → ich stehe … auf, anfangen, einkaufen), frühstücken, zur Arbeit fahren, zu Mittag essen, nach Hause gehen, ins Bett gehen; zuerst, dann, danach; immer, oft, manchmal, nie; times. Situation: the learner describes a typical working day to a new colleague (Selina)."},
   {id:"wohnen", fr:"Chez moi", de:"Ich wohne in einem Haus", goal:"Décrire son logement et l’endroit où l’on vit.",
    words:["das Haus","die Wohnung","das Zimmer","die Küche","groß / klein","Es gibt …"],
-   plan:"Home and town: das Haus, die Wohnung, das Zimmer, die Küche, das Bad, der Garten, groß, klein, hell, schön, alt, neu, ruhig, Es gibt … (+ accusative), Ich wohne in der Stadt / auf dem Land. The learner describes where they live; Lena describes her flat in Munich. Situation: a friend visits the learner’s home."},
+   plan:"Home and town: das Haus, die Wohnung, das Zimmer, die Küche, das Bad, der Garten, groß, klein, hell, schön, alt, neu, ruhig, Es gibt … (+ accusative), Ich wohne in der Stadt / auf dem Land. The learner describes where they live; Selina describes her flat in Munich. Situation: a friend visits the learner’s home."},
   {id:"wetter", fr:"La météo et les saisons", de:"Wie ist das Wetter?", goal:"Parler du temps qu’il fait et des saisons.",
    words:["Wie ist das Wetter?","Die Sonne scheint","Es regnet","Es ist kalt / warm","im Sommer","zwanzig Grad"],
    plan:"Weather: Wie ist das Wetter? Es ist sonnig / warm / kalt / heiß, Die Sonne scheint, Es regnet, Es schneit, der Wind, … Grad; the seasons and months (im Sommer, im Januar). Compare the weather in the Drôme and in Munich. Situation: small talk with a customer on the phone before business."},
   {id:"freizeit", fr:"Les loisirs", de:"Was machst du gern?", goal:"Dire ce qu’on aime faire, inviter quelqu’un, accepter ou refuser.",
    words:["Ich … gern","Ich spiele …","lesen, kochen, reisen","am Wochenende","Hast du Lust?","Gute Idee!"],
-   plan:"Hobbies: Ich spiele gern Tennis / Fußball, Ich lese / koche / reise gern, Was machst du am Wochenende?, gern / nicht gern / lieber. Invitations: Hast du Lust auf …? Kommst du mit? Gute Idee! / Leider kann ich nicht. Situation: Lena invites the learner for the weekend."},
+   plan:"Hobbies: Ich spiele gern Tennis / Fußball, Ich lese / koche / reise gern, Was machst du am Wochenende?, gern / nicht gern / lieber. Invitations: Hast du Lust auf …? Kommst du mit? Gute Idee! / Leider kann ich nicht. Situation: Selina invites the learner for the weekend."},
   {id:"kleidung", fr:"Les vêtements", de:"Die Jacke ist zu groß", goal:"Acheter un vêtement, parler des couleurs et des tailles.",
    words:["die Jacke","die Hose","das Hemd","Welche Größe?","rot, blau, schwarz","Kann ich das anprobieren?"],
-   plan:"Clothes and colours: die Jacke, die Hose, das Hemd, das Kleid, der Pullover, die Schuhe, colours, Welche Größe haben Sie?, zu groß / zu klein, Kann ich das anprobieren?, Das nehme ich. Situation with Sie: Lena is the shop assistant."},
+   plan:"Clothes and colours: die Jacke, die Hose, das Hemd, das Kleid, der Pullover, die Schuhe, colours, Welche Größe haben Sie?, zu groß / zu klein, Kann ich das anprobieren?, Das nehme ich. Situation with Sie: Selina is the shop assistant."},
   {id:"arbeit", fr:"Mon travail", de:"Was machen Sie beruflich?", goal:"Présenter son métier et son entreprise.",
    words:["Was machen Sie beruflich?","Ich arbeite bei …","die Firma","Ich verkaufe …","der Kunde","der Kollege"],
    plan:"Talking about work: Was machen Sie beruflich? Ich bin …, Ich arbeite bei …, Ich verkaufe Eis an Restaurants, die Firma, der Kunde, der Kollege, das Büro, klein, groß. Use the learner’s real work (see the learner profile). Practise the Sie form. Situation: networking at a business dinner."},
   {id:"telefon", fr:"Au téléphone", de:"Hier ist …", goal:"Se présenter au téléphone, faire répéter, laisser un message.",
    words:["Hier ist …","Ich möchte mit … sprechen","Einen Moment, bitte","Wie bitte?","Können Sie das wiederholen?","Auf Wiederhören"],
-   plan:"Phone call basics: Guten Tag, hier ist …, Ich möchte mit Herrn / Frau … sprechen, Einen Moment bitte, Er ist nicht da, Wie bitte?, Können Sie das wiederholen?, langsamer bitte, Ich rufe später an, Auf Wiederhören. Situation with Sie: the learner calls a German company, Lena is the receptionist."},
+   plan:"Phone call basics: Guten Tag, hier ist …, Ich möchte mit Herrn / Frau … sprechen, Einen Moment bitte, Er ist nicht da, Wie bitte?, Können Sie das wiederholen?, langsamer bitte, Ich rufe später an, Auf Wiederhören. Situation with Sie: the learner calls a German company, Selina is the receptionist."},
   {id:"bestellung", fr:"Une commande", de:"Ich möchte bestellen", goal:"Prendre la commande d’un client et fixer la livraison.",
    words:["bestellen","die Bestellung","der Karton","Wie viele?","die Lieferung","am Dienstag","Das ist alles"],
-   plan:"Taking a business order and setting the delivery: Ich möchte bestellen, Wie viele Kartons?, Welche Sorten?, der Preis pro Karton, Noch etwas?, Das ist alles, Wann kommt die Lieferung? Die Lieferung kommt am Dienstag um zehn Uhr. Reuse numbers, days and times. Situation with Sie: Lena owns a restaurant in Munich and orders gelato from the learner."},
+   plan:"Taking a business order and setting the delivery: Ich möchte bestellen, Wie viele Kartons?, Welche Sorten?, der Preis pro Karton, Noch etwas?, Das ist alles, Wann kommt die Lieferung? Die Lieferung kommt am Dienstag um zehn Uhr. Reuse numbers, days and times. Situation with Sie: Selina owns a restaurant in Munich and orders gelato from the learner."},
   {id:"messe", fr:"Au salon professionnel", de:"Willkommen auf der Messe!", goal:"Révision du A1 : présenter son entreprise à un salon, du bonjour à la commande.",
    words:["die Messe","Darf ich vorstellen?","unser Eis","aus Italien","Möchten Sie probieren?","die Visitenkarte"],
    plan:"Review of the whole A1 level in a role-play at a food trade fair in Germany: greeting, introducing oneself and the company and its gelato made in Rome, flavours, prices, a small order with a delivery day, exchanging business cards (die Visitenkarte), goodbye."}
@@ -701,11 +715,11 @@ const UNITS_A1 = [
 /* Les quatre séances d'une unité, plus la révision, l'examen blanc et la conversation libre */
 const STEPS = ["decouvrir","pratiquer","situation","bilan"];
 const KINDS = {
-  decouvrir:{fr:"Découvrir", desc:"Lena présente les expressions, une à une", target:8},
+  decouvrir:{fr:"Découvrir", desc:"Selina présente les expressions, une à une", target:8},
   pratiquer:{fr:"S’entraîner", desc:"beaucoup de questions courtes et des exercices", target:10},
-  situation:{fr:"En situation", desc:"une vraie scène jouée avec Lena", target:10},
+  situation:{fr:"En situation", desc:"une vraie scène jouée avec Selina", target:10},
   bilan:{fr:"Bilan", desc:"un mini-test de 8 questions, 80 % pour valider", target:8, test:true, pass:80},
-  revision:{fr:"Révision", desc:"Lena reprend les unités passées et vos points faibles", target:10},
+  revision:{fr:"Révision", desc:"Selina reprend les unités passées et vos points faibles", target:10},
   examen:{fr:"Examen blanc", desc:"comme au Goethe-Institut : écouter, lire, écrire, parler", target:12, test:true, pass:60},
   libre:{fr:"Conversation libre", desc:"", target:10}
 };
@@ -749,13 +763,13 @@ const LESSONS_A2 = [
    plan:"Perfekt with haben: Was hast du am Wochenende gemacht? Ich habe Fußball gespielt / Eis gegessen / einen Film gesehen. Regular participles (ge-…-t: gemacht, gekauft, gespielt) and common irregular ones (gegessen, getrunken, gesehen). The participle goes to the end of the sentence. Role-play: Monday morning at the office, colleagues talk about the weekend."},
   {id:"a2-reise", fr:"Un voyage passé", de:"Ich bin nach Berlin gefahren", goal:"Raconter un déplacement : le passé avec « sein ».",
    words:["Ich bin … gefahren","Ich bin geflogen","angekommen","Wie war die Reise?","mit dem Zug","Es war toll"],
-   plan:"Perfekt with sein for movement and change: Ich bin nach Berlin gefahren / geflogen / gegangen, angekommen, geblieben. Wie war die Reise? Es war toll / anstrengend. mit dem Zug, mit dem Auto. Contrast with haben. Role-play: telling Lena about a business trip."},
+   plan:"Perfekt with sein for movement and change: Ich bin nach Berlin gefahren / geflogen / gegangen, angekommen, geblieben. Wie war die Reise? Es war toll / anstrengend. mit dem Zug, mit dem Auto. Contrast with haben. Role-play: telling Selina about a business trip."},
   {id:"a2-modal", fr:"Pouvoir, devoir, vouloir", de:"Ich muss, ich kann, ich will", goal:"Dire ce qu’on doit, peut ou veut faire.",
    words:["Ich kann …","Ich muss …","Ich will …","Darf ich …?","Kannst du …?","heute Abend"],
    plan:"Modal verbs können, müssen, wollen, dürfen (+ möchten): conjugation (ich kann, du kannst, er kann) and the infinitive at the end (Ich muss heute arbeiten). Questions: Kannst du morgen kommen? Darf ich fragen …? Role-play: organising a busy day and asking colleagues for help."},
   {id:"a2-arzt", fr:"Chez le médecin", de:"Was fehlt Ihnen?", goal:"Dire où l’on a mal, comprendre un conseil simple.",
    words:["Ich habe Kopfschmerzen","Mein Bauch tut weh","seit gestern","das Fieber","die Apotheke","Gute Besserung!"],
-   plan:"Health: body parts (der Kopf, der Bauch, der Rücken, der Hals), Ich habe …schmerzen, … tut weh, seit gestern / seit drei Tagen, Fieber, krank, die Apotheke, Sie sollen … (advice), Gute Besserung. Role-play with Sie: Lena is the doctor."},
+   plan:"Health: body parts (der Kopf, der Bauch, der Rücken, der Hals), Ich habe …schmerzen, … tut weh, seit gestern / seit drei Tagen, Fieber, krank, die Apotheke, Sie sollen … (advice), Gute Besserung. Role-play with Sie: Selina is the doctor."},
   {id:"a2-wohnung", fr:"Le logement", de:"Meine Wohnung", goal:"Décrire son logement, dire où sont les choses.",
    words:["die Wohnung","das Zimmer","die Küche","in der Küche","im Wohnzimmer","hell, groß, ruhig"],
    plan:"Housing: rooms (die Küche, das Bad, das Wohnzimmer, das Schlafzimmer), adjectives (hell, groß, klein, ruhig), Wo ist …? in + dative (in der Küche, im Wohnzimmer, auf dem Tisch). Role-play: describing a flat you rent to a colleague, or visiting a flat."},
@@ -764,13 +778,13 @@ const LESSONS_A2 = [
    plan:"Appointments: dates with ordinal numbers (am ersten, zweiten, dritten Mai), times, Wann passt es Ihnen? Passt Ihnen Dienstag um zehn? Das geht leider nicht, Können wir den Termin verschieben? Role-play with Sie: setting a meeting with a German customer by phone."},
   {id:"a2-restaurant", fr:"Au restaurant, poliment", de:"Ich hätte gern …", goal:"Commander et réclamer avec les formes de politesse.",
    words:["Ich hätte gern …","Könnten Sie …?","Würden Sie …?","Das Essen ist kalt","Entschuldigung, aber …","Stimmt so!"],
-   plan:"Polite forms: Ich hätte gern …, Könnten Sie mir … bringen?, Würden Sie …? Complaining politely (Entschuldigung, aber die Suppe ist kalt / das ist nicht richtig). Paying and tipping (Stimmt so!). Role-play with Sie: Lena is the waitress, something goes wrong with the order."},
+   plan:"Polite forms: Ich hätte gern …, Könnten Sie mir … bringen?, Würden Sie …? Complaining politely (Entschuldigung, aber die Suppe ist kalt / das ist nicht richtig). Paying and tipping (Stimmt so!). Role-play with Sie: Selina is the waitress, something goes wrong with the order."},
   {id:"a2-weg", fr:"Trouver son chemin", de:"Wie komme ich zum Bahnhof?", goal:"Demander et expliquer un chemin, prendre les transports.",
    words:["Wie komme ich zum …?","mit dem Bus","an der Ampel","die Haltestelle","links abbiegen","Es ist nicht weit"],
    plan:"Directions and transport: Wie komme ich zum Bahnhof / zur Messe? geradeaus, links / rechts abbiegen, an der Ampel, an der Ecke, die Haltestelle, mit dem Bus / mit der U-Bahn (dative after mit, zu). Role-play: the learner asks the way to the trade fair."},
   {id:"a2-kunde", fr:"Un client mécontent", de:"Es tut mir leid, weil …", goal:"S’excuser, expliquer pourquoi, proposer une solution.",
    words:["Es tut mir leid","weil …","Die Lieferung kommt zu spät","Wir schicken …","ein Rabatt","zufrieden"],
-   plan:"Handling a complaint: Es tut mir leid, explaining with weil (verb at the end: weil der Lkw zu spät gekommen ist), proposing a solution (Wir schicken morgen eine neue Lieferung, Sie bekommen einen Rabatt), checking satisfaction. Role-play with Sie: Lena is an unhappy customer in Munich."},
+   plan:"Handling a complaint: Es tut mir leid, explaining with weil (verb at the end: weil der Lkw zu spät gekommen ist), proposing a solution (Wir schicken morgen eine neue Lieferung, Sie bekommen einen Rabatt), checking satisfaction. Role-play with Sie: Selina is an unhappy customer in Munich."},
   {id:"a2-vergleich", fr:"Comparer", de:"Pistazie ist süßer als Zitrone", goal:"Comparer des produits, dire ce qu’on préfère.",
    words:["süßer als","billiger","besser","am besten","lieber","Ich finde …"],
    plan:"Comparatives and superlatives: süß, süßer, am süßesten; gut, besser, am besten; gern, lieber, am liebsten; als. Ich finde Pistazie besser als Vanille. Compare gelato flavours, prices and shops. Role-play: helping a customer choose between flavours."},
@@ -779,7 +793,7 @@ const LESSONS_A2 = [
    plan:"Plans and opinions: future with present tense + time words (nächste Woche fahre ich …), Ich habe vor, … zu …, dass-clauses with the verb at the end (Ich glaube, dass das Eis gut ankommt), Meiner Meinung nach. Talk about plans for the company and for holidays."},
   {id:"a2-praesentation", fr:"Présenter son entreprise", de:"Darf ich Ihnen Gemelli vorstellen?", goal:"Révision A2 : présenter l’entreprise à un distributeur allemand.",
    words:["Darf ich vorstellen?","Wir produzieren …","seit … Jahren","Unsere Kunden sind …","der Vertrag","Wir freuen uns auf …"],
-   plan:"A2 review in a role-play with Sie: presenting the learner’s gelato company to a German distributor: history (Perfekt), products (comparatives), what they can deliver (modal verbs), delivery times, a first order, and next steps (Termin, Vertrag). Lena plays the distributor and asks questions."}
+   plan:"A2 review in a role-play with Sie: presenting the learner’s gelato company to a German distributor: history (Perfekt), products (comparatives), what they can deliver (modal verbs), delivery times, a first order, and next steps (Termin, Vertrag). Selina plays the distributor and asks questions."}
 ];
 const UNITS = [...UNITS_A1.map((l,i) => ({...l, lvl:"A1", n:i+1})), ...LESSONS_A2.map((l,i) => ({...l, lvl:"A2", n:i+1}))];
 const unitsOf = lvl => UNITS.filter(l => l.lvl === lvl);
@@ -881,13 +895,13 @@ const GRAMMAR = [
      "<b>Sie</b> avec une majuscule, c’est le « vous » de politesse. Il se conjugue comme « sie » (ils) : Sie wohnen."],
    tables:[{cap:"wohnen (habiter) : le modèle", head:["","verbe","sens"], rows:[["ich","wohne","j’habite"],["du","wohnst","tu habites"],["er / sie / es","wohnt","il / elle habite"],["wir","wohnen","nous habitons"],["ihr","wohnt","vous habitez (entre amis)"],["sie / Sie","wohnen","ils habitent / vous habitez"]]},
      {cap:"sein (être) : irrégulier, à connaître par cœur", head:["","verbe"], rows:[["ich","bin"],["du","bist"],["er / sie / es","ist"],["wir","sind"],["ihr","seid"],["sie / Sie","sind"]]}],
-   ex:[["Ich komme aus Frankreich.","Je viens de France."],["Wo wohnst du?","Où habites-tu ?"],["Sie heißt Lena.","Elle s’appelle Lena."],["Wir sind in München.","Nous sommes à Munich."]],
+   ex:[["Ich komme aus Frankreich.","Je viens de France."],["Wo wohnst du?","Où habites-tu ?"],["Sie heißt Selina.","Elle s’appelle Selina."],["Wir sind in München.","Nous sommes à Munich."]],
    traps:["heißen : <b>du heißt</b> (et pas « heißst »). Quand le radical finit déjà par s, ß ou z, on n’ajoute que -t.",
      "arbeiten : <b>du arbeitest, er arbeitet</b>. Quand le radical finit par -t ou -d, on ajoute un e pour pouvoir prononcer.",
      "« sie » veut dire « elle » (sie wohnt) ou « ils » (sie wohnen) : c’est la fin du verbe qui vous le dit."],
    quiz:[["du ___ (kommen)",["komme","kommst","kommt"],1,"Avec du, la terminaison est -st."],
      ["wir ___ (wohnen)",["wohnen","wohnt","wohnst"],0,"Avec wir, on garde l’infinitif : -en."],
-     ["Lena ___ aus München. (kommen)",["kommen","kommst","kommt"],2,"Lena = sie (elle) : -t."],
+     ["Selina ___ aus München. (kommen)",["kommen","kommst","kommt"],2,"Selina = sie (elle) : -t."],
      ["Wie ___ Sie? (heißen)",["heißt","heißen","heiße"],1,"Le Sie de politesse se conjugue comme « ils » : -en."],
      ["ich ___ Nicolas. (sein)",["bin","ist","sind"],0,"sein est irrégulier : ich bin."]]},
 
@@ -975,7 +989,7 @@ const GRAMMAR = [
      "Si la phrase commence par autre chose que le sujet (un moment, un lieu), le sujet passe <b>après</b> le verbe : Am Montag <b>arbeite ich</b>. Heute <b>kommt</b> die Lieferung.",
      "Pour dire quand : <b>am</b> + jour (am Montag), <b>um</b> + heure (um zehn Uhr), <b>im</b> + mois ou saison (im Juli, im Sommer)."],
    tables:[{cap:"Le verbe ne bouge pas de la 2e place", head:["1er élément","2e : le verbe","la suite"], rows:[["Ich","arbeite","am Montag."],["Am Montag","arbeite","ich."],["Um zehn Uhr","kommt","der Lkw."],["Heute","habe","ich keine Zeit."]]}],
-   ex:[["Morgen fahre ich nach Valence.","Demain, je vais à Valence."],["Um acht Uhr frühstücke ich.","À huit heures, je prends mon petit-déjeuner."],["Im Sommer verkaufen wir viel Eis.","En été, nous vendons beaucoup de glace."],["Am Wochenende wandert Lena.","Le week-end, Lena fait de la randonnée."]],
+   ex:[["Morgen fahre ich nach Valence.","Demain, je vais à Valence."],["Um acht Uhr frühstücke ich.","À huit heures, je prends mon petit-déjeuner."],["Im Sommer verkaufen wir viel Eis.","En été, nous vendons beaucoup de glace."],["Am Wochenende wandert Selina.","Le week-end, Selina fait de la randonnée."]],
    traps:["Ne calquez pas le français : « Lundi, je travaille » donne <b>Am Montag arbeite ich</b>, jamais « Am Montag ich arbeite ».",
      "Un « élément » peut faire plusieurs mots : « Am nächsten Montag » compte pour un seul.",
      "<b>halb drei</b> = 2 h 30 (la moitié avant trois heures), pas 3 h 30 !"],
@@ -1035,7 +1049,7 @@ const GRAMMAR = [
      "Les autres personnes restent normales : ich lese, wir lesen, ihr lest.",
      "Pour dire qu’on aime faire quelque chose : le verbe + <b>gern</b>. Ich lese <b>gern</b>. Ich tanze <b>nicht gern</b>. Ich spiele <b>lieber</b> Tennis (je préfère jouer au tennis)."],
    tables:[{cap:"Les plus courants", head:["infinitif","ich","du","er / sie / es"], rows:[["lesen (lire)","lese","liest","liest"],["fahren (aller en véhicule)","fahre","fährst","fährt"],["sprechen (parler)","spreche","sprichst","spricht"],["essen (manger)","esse","isst","isst"],["nehmen (prendre)","nehme","nimmst","nimmt"],["schlafen (dormir)","schlafe","schläfst","schläft"]]}],
-   ex:[["Liest du gern?","Tu aimes lire ?"],["Lena fährt jeden Tag Rad.","Lena fait du vélo tous les jours."],["Ich koche gern, aber ich esse lieber im Restaurant.","J’aime cuisiner, mais je préfère manger au restaurant."],["Sprichst du Italienisch?","Tu parles italien ?"]],
+   ex:[["Liest du gern?","Tu aimes lire ?"],["Selina fährt jeden Tag Rad.","Selina fait du vélo tous les jours."],["Ich koche gern, aber ich esse lieber im Restaurant.","J’aime cuisiner, mais je préfère manger au restaurant."],["Sprichst du Italienisch?","Tu parles italien ?"]],
    traps:["Les changements possibles : a → ä (fahren, schlafen), e → i (sprechen, essen, nehmen), e → ie (lesen, sehen).",
      "nehmen est doublement irrégulier : du <b>nimmst</b>, er <b>nimmt</b>.",
      "gern se place après le verbe conjugué : Ich schwimme <b>gern</b> (jamais « Ich gern schwimme »)."],
@@ -1043,7 +1057,7 @@ const GRAMMAR = [
      ["er ___ (lesen)",["lest","liest","lies"],1,"e → ie : er liest."],
      ["wir ___ (sprechen)",["sprechen","sprichen","sprecht"],0,"Avec wir, pas de changement."],
      ["« J’aime nager. »",["Ich gern schwimme.","Ich schwimme gern.","Ich mag schwimme."],1,"Le verbe, puis gern."],
-     ["Lena ___ einen Kaffee. (nehmen)",["nehmt","nimmt","nimmst"],1,"er / sie nimmt."]]},
+     ["Selina ___ einen Kaffee. (nehmen)",["nehmt","nimmt","nimmst"],1,"er / sie nimmt."]]},
 
   {id:"g-modal", unit:"kleidung", title:"Pouvoir, devoir, vouloir", de:"Kann ich das anprobieren?",
    rule:["<b>können</b> (pouvoir), <b>müssen</b> (devoir), <b>wollen</b> (vouloir) et <b>möchten</b> (voudrais) s’utilisent avec un deuxième verbe à l’infinitif.",
@@ -1217,11 +1231,11 @@ const ICON = {
 };
 
 
-/* ---------- Lena (portrait) ---------- */
+/* ---------- Selina (portrait) ---------- */
 let lenaUid = 0;
-function lenaSVG(){
+function drawnSVG(){
   const id = "lc" + (++lenaUid);
-  return `<svg class="lena" viewBox="0 0 200 200" data-state="idle" role="img" aria-label="Lena, votre professeure d’allemand">
+  return `<svg class="lena" viewBox="0 0 200 200" data-state="idle" role="img" aria-label="Selina, votre professeure d’allemand">
   <defs><clipPath id="${id}"><circle cx="100" cy="100" r="96"/></clipPath></defs>
   <circle class="ring" cx="100" cy="100" r="98" fill="none" stroke="var(--gold)" stroke-width="3"/>
   <circle cx="100" cy="100" r="96" fill="var(--lena-bg)"/>
@@ -1269,7 +1283,15 @@ function lenaSVG(){
   <g class="dots" fill="var(--gold)"><circle cx="158" cy="38" r="4.5"/><circle cx="172" cy="38" r="4.5"/><circle cx="186" cy="38" r="4.5"/></g>
 </svg>`;
 }
-function setLena(s){ document.querySelectorAll("#session .lena").forEach(el => el.setAttribute("data-state", s)); }
+/* Le visage de Selina : les images chargées dans les Réglages (sourire, bouche entrouverte, yeux fermés), sinon le dessin */
+let faceUrls = null;
+function lenaSVG(){
+  if (!faceUrls) return drawnSVG();
+  return `<div class="lena face" data-state="idle" role="img" aria-label="Selina, votre professeure d’allemand">
+    <img class="f-smile" src="${faceUrls.smile}" alt=""><img class="f-talk" src="${faceUrls.talk}" alt=""><img class="f-blink" src="${faceUrls.blink}" alt="">
+    <span class="dots"><i></i><i></i><i></i></span></div>`;
+}
+function setSelina(s){ document.querySelectorAll("#session .lena").forEach(el => el.setAttribute("data-state", s)); }
 
 /* ---------- Accueil et onglets ---------- */
 const app = document.getElementById("app");
@@ -1312,7 +1334,7 @@ function progressCard(){
       <div class="goal-txt">
         <p class="eyebrow">Objectif du jour</p>
         <p class="big">${today >= goal ? "Objectif atteint !" : `${today} sur ${goal} points`}</p>
-        <p class="meta">${today >= goal ? "Tout ce que vous faites en plus compte pour votre rang." : "Une leçon avec Lena suffit, ou des cartes et un quiz."}</p>
+        <p class="meta">${today >= goal ? "Tout ce que vous faites en plus compte pour votre rang." : "Une leçon avec Selina suffit, ou des cartes et un quiz."}</p>
       </div>
     </div>
     <div class="week" aria-label="Les sept derniers jours">${week}</div>
@@ -1355,7 +1377,7 @@ function viewHome(){
   const noVoice = ("speechSynthesis" in window) && voices.length === 0 && voicesChecked;
   return `
     <header class="top">
-      <div><p class="hello">${esc(g.fr)}${name ? " " + esc(name) : ""} · niveau ${lvl}</p><h1>Deutsch mit <em>Lena</em></h1></div>
+      <div><p class="hello">${esc(g.fr)}${name ? " " + esc(name) : ""} · niveau ${lvl}</p><h1>Deutsch mit <em>Selina</em></h1></div>
       <span class="streak" title="Jours de suite">${ICON.flame}${streakNow()} <small>jour${streakNow()>1?"s":""}</small></span>
     </header>
 
@@ -1380,21 +1402,21 @@ function viewHome(){
       <div class="prog"><span class="bar"><i style="width:${Math.round(done/total*100)}%"></i></span><span>${done} / ${total} unités</span></div>
     </section>
 
-    ${sampleState === "absent" ? `<p class="notice"><b>Lena a besoin de votre clé Google (gratuite) pour vous répondre.</b> Ajoutez-la dans Réglages, ou ouvrez « Parler avec Lena » : la même clé sert partout. Les cartes, les verbes, la grammaire et le jeu der/die/das marchent sans elle.</p>` : ""}
-    ${noVoice ? `<p class="notice"><b>Pas de voix allemande sur cet appareil :</b> Lena écrira sans parler. Sur iPhone : Réglages › Accessibilité › Lire et énoncer › Voix › Allemand.</p>` : ""}
+    ${sampleState === "absent" ? `<p class="notice"><b>Selina a besoin de votre clé Google (gratuite) pour vous répondre.</b> Ajoutez-la dans Réglages, ou ouvrez « Parler avec Selina » : la même clé sert partout. Les cartes, les verbes, la grammaire et le jeu der/die/das marchent sans elle.</p>` : ""}
+    ${noVoice ? `<p class="notice"><b>Pas de voix allemande sur cet appareil :</b> Selina écrira sans parler. Sur iPhone : Réglages › Accessibilité › Lire et énoncer › Voix › Allemand.</p>` : ""}
 
     <section class="card oral-card">
-      <div><p class="eyebrow">Mains libres</p><h2>Parler avec Lena</h2><p class="meta">La conversation à voix haute, avec son visage et sa voix. Le texte et la traduction s’écrivent au fur et à mesure.</p></div>
-      <a class="btn block" href="oral.html">Parler avec Lena</a>
+      <div><p class="eyebrow">Mains libres</p><h2>Parler avec Selina</h2><p class="meta">La conversation à voix haute, avec son visage et sa voix. Le texte et la traduction s’écrivent au fur et à mesure.</p></div>
+      <a class="btn block" href="oral.html">Parler avec Selina</a>
     </section>
 
-    ${revisionDue() ? `<section class="card rev-card"><div><p class="eyebrow">Cette semaine</p><h2>La révision</h2><p class="meta">Lena reprend vos unités validées et ce qui coince encore. Dix minutes, et les mots ne s’envolent pas.</p></div>
+    ${revisionDue() ? `<section class="card rev-card"><div><p class="eyebrow">Cette semaine</p><h2>La révision</h2><p class="meta">Selina reprend vos unités validées et ce qui coince encore. Dix minutes, et les mots ne s’envolent pas.</p></div>
       <button class="btn block" data-a="revision"${canTalk()?"":" disabled"}>Faire la révision</button></section>` : ""}
 
     ${progressCard()}
 
     <section class="sec" aria-labelledby="train-h">
-      <div class="sec-head"><h2 id="train-h">S’entraîner</h2><span class="meta">Cinq minutes, sans Lena</span></div>
+      <div class="sec-head"><h2 id="train-h">S’entraîner</h2><span class="meta">Cinq minutes, sans Selina</span></div>
       <div class="tiles">
         <button class="tile" data-a="cards"><span class="tile-n">${cs.due + cs.newToday}</span><b>Cartes</b><small>${cs.due} à revoir · ${cs.newToday} nouvelles</small></button>
         <button class="tile" data-a="vquiz"><span class="tile-n">${VERBS.filter(v => !v.lvl || lvl === "A2").length}</span><b>Verbes</b><small>${lvl === "A2" ? "présent et passé" : "les essentiels"}</small></button>
@@ -1408,7 +1430,7 @@ function viewHome(){
     </section>
 
     ${state.memory.length ? `<section class="sec" aria-labelledby="mem-h">
-      <div class="sec-head"><h2 id="mem-h">Lena se souvient</h2><span class="meta">À travailler</span></div>
+      <div class="sec-head"><h2 id="mem-h">Selina se souvient</h2><span class="meta">À travailler</span></div>
       <div class="card"><ul class="memo">${state.memory.slice(0,4).map(m => `<li>${esc(m)}</li>`).join("")}</ul></div>
     </section>` : ""}`;
 }
@@ -1441,7 +1463,7 @@ function viewPath(){
         </li>`; }).join("")}
     </ol>
     <section class="card rev-card">
-      <div><p class="eyebrow">Pour fixer</p><h2>Révision</h2><p class="meta">Lena reprend les unités commencées et vos points faibles. Idéal une fois par semaine.</p></div>
+      <div><p class="eyebrow">Pour fixer</p><h2>Révision</h2><p class="meta">Selina reprend les unités commencées et vos points faibles. Idéal une fois par semaine.</p></div>
       <button class="btn ghost block" data-a="revision"${canTalk() && startedUnits(lvl).length ? "" : " disabled"}>Faire une révision</button>
     </section>
     <section class="card rev-card">
@@ -1455,7 +1477,7 @@ function viewGrammar(){
   const lvl = curLevel();
   return `
     <header class="page-title"><p class="eyebrow">Grammaire · niveau A1</p><h1>Les règles</h1>
-      <p class="meta">Une fiche par unité : la règle en quelques phrases, des exemples à écouter, les pièges d’un francophone et un petit quiz. Pendant les séances, le bouton « Pourquoi ? » sous chaque phrase de Lena l’explique mot à mot.</p></header>
+      <p class="meta">Une fiche par unité : la règle en quelques phrases, des exemples à écouter, les pièges d’un francophone et un petit quiz. Pendant les séances, le bouton « Pourquoi ? » sous chaque phrase de Selina l’explique mot à mot.</p></header>
     ${lvl === "A2" ? `<p class="notice">Les fiches du A2 arriveront avec le nouveau A2. En attendant, celles du A1 restent la base.</p>` : ""}
     <ol class="fiches">
       ${GRAMMAR.map(gr => { const u = UNITS.find(x => x.id === gr.unit); const st = grammarState(gr.id);
@@ -1474,7 +1496,7 @@ function viewTrain(){
     <header class="page-title"><p class="eyebrow">S’entraîner · niveau ${lvl}</p><h1>À votre rythme</h1><p class="meta">Chaque bonne réponse rapporte des points pour votre objectif du jour.</p></header>
 
     <section class="card train">
-      <div class="train-h"><div><h2>Cartes à mémoriser</h2><p class="meta">Les mots reviennent juste avant que vous les oubliiez. Ceux vus avec Lena s’y ajoutent tout seuls.</p></div></div>
+      <div class="train-h"><div><h2>Cartes à mémoriser</h2><p class="meta">Les mots reviennent juste avant que vous les oubliiez. Ceux vus avec Selina s’y ajoutent tout seuls.</p></div></div>
       <div class="nums"><span><b>${cs.due}</b> à revoir</span><span><b>${cs.newToday}</b> nouvelles aujourd’hui</span><span><b>${cs.mastered}</b> / ${cs.total} retenues</span></div>
       <button class="btn block" data-a="cards"${cs.due + cs.newToday ? "" : " disabled"}>${cs.due + cs.newToday ? `Réviser ${cs.due + cs.newToday} cartes` : "Tout est revu pour aujourd’hui"}</button>
     </section>
@@ -1496,25 +1518,25 @@ function viewTrain(){
     </section>
 
     <details class="card words-box">
-      <summary><span><b>Mes mots avec Lena</b> <span class="meta">${state.words.length}</span></span></summary>
+      <summary><span><b>Mes mots avec Selina</b> <span class="meta">${state.words.length}</span></span></summary>
       ${state.words.length ? `<div class="words">${state.words.map(w => `<div class="word"><button class="ico sm" data-a="say" data-t="${esc(w.de)}" aria-label="Écouter ${esc(w.de)}">${ICON_SPEAK}</button><span class="w"><b lang="de">${esc(w.de)}</b><span>${esc(w.fr)}</span></span></div>`).join("")}</div>`
-        : `<p class="meta" style="padding-top:8px">Les mots vus en séance avec Lena s’ajoutent ici et dans vos cartes.</p>`}
+        : `<p class="meta" style="padding-top:8px">Les mots vus en séance avec Selina s’ajoutent ici et dans vos cartes.</p>`}
     </details>`;
 }
 
 function viewSettings(){
   return `
-    <header class="page-title"><p class="eyebrow">Réglages</p><h1>Vous et Lena</h1></header>
+    <header class="page-title"><p class="eyebrow">Réglages</p><h1>Vous et Selina</h1></header>
     <div class="card form">
       <div class="field"><label for="gkey">Clé Google AI Studio (gratuite)</label><input id="gkey" type="password" autocomplete="off" spellcheck="false" value="${esc(gKey())}" placeholder="Collez la clé ici">
-        <span class="meta">La même clé que pour « Parler avec Lena ». Elle reste sur ce téléphone. Pour en créer une : aistudio.google.com/apikey.</span></div>
+        <span class="meta">La même clé que pour « Parler avec Selina ». Elle reste sur ce téléphone. Pour en créer une : aistudio.google.com/apikey.</span></div>
     </div>
     <div class="card form">
-      <div class="field"><label for="pname">Votre prénom</label><input id="pname" autocomplete="given-name" value="${esc(state.profile.name)}" placeholder="Lena vous appellera ainsi"></div>
-      <div class="field"><label for="pwork">Ce que vous faites</label><textarea id="pwork" placeholder="Pour que Lena parle de votre quotidien">${esc(state.profile.work)}</textarea></div>
+      <div class="field"><label for="pname">Votre prénom</label><input id="pname" autocomplete="given-name" value="${esc(state.profile.name)}" placeholder="Selina vous appellera ainsi"></div>
+      <div class="field"><label for="pwork">Ce que vous faites</label><textarea id="pwork" placeholder="Pour que Selina parle de votre quotidien">${esc(state.profile.work)}</textarea></div>
     </div>
     <div class="card form">
-      <div class="field"><span class="lab">Ce que Lena sait de vous</span>
+      <div class="field"><span class="lab">Ce que Selina sait de vous</span>
         ${(state.profile.facts || []).length ? `<ul class="facts">${state.profile.facts.map((f, i) => `<li><span>${esc(f)}</span><button class="ico sm" data-a="fact-del" data-i="${i}" aria-label="Oublier : ${esc(f)}">${ICON.close}</button></li>`).join("")}</ul>`
           : `<span class="meta">Rien encore. Ce que vous lui racontez en séance (votre ville, votre famille, vos goûts) s’ajoutera ici, pour qu’elle ne vous redemande pas.</span>`}
       </div>
@@ -1522,14 +1544,14 @@ function viewSettings(){
     <div class="card form">
       <div class="field"><span class="lab">Quel allemand ?</span><div class="seg" role="group" aria-label="Variante">
         <button data-a="region" data-v="CH" aria-pressed="${isCH()}">De Suisse</button><button data-a="region" data-v="DE" aria-pressed="${!isCH()}">D’Allemagne</button>
-      </div><span class="meta">${isCH() ? "Allemand standard tel qu’on l’écrit en Suisse (ss au lieu de ß, Velo, Glace, francs), Lena à Berne, et les expressions bernoises à comprendre." : "Allemand standard d’Allemagne, sans les particularités suisses."}</span></div>
+      </div><span class="meta">${isCH() ? "Allemand standard tel qu’on l’écrit en Suisse (ss au lieu de ß, Velo, Glace, francs), Selina à Berne, et les expressions bernoises à comprendre." : "Allemand standard d’Allemagne, sans les particularités suisses."}</span></div>
       <div class="field"><span class="lab">Objectif du jour</span><div class="seg" role="group" aria-label="Objectif du jour">
         ${[[20,"Tranquille · 20"],[40,"Régulier · 40"],[70,"Intensif · 70"]].map(([v,l]) => `<button data-a="goal" data-v="${v}" aria-pressed="${state.settings.goal===v}">${l}</button>`).join("")}
-      </div><span class="meta">En points : une leçon avec Lena en rapporte de 30 à 60, une carte 1, un bon verbe 2.</span></div>
-      <div class="field"><label for="voice">Voix de Lena</label>
-        <div class="row nowrap">${voiceSelect()}<button class="ico" data-a="say" data-t="Hallo! Ich bin Lena. Schön, dass du da bist." aria-label="Écouter la voix">${ICON_SPEAK}</button></div>
+      </div><span class="meta">En points : une leçon avec Selina en rapporte de 30 à 60, une carte 1, un bon verbe 2.</span></div>
+      <div class="field"><label for="voice">Voix de Selina</label>
+        <div class="row nowrap">${voiceSelect()}<button class="ico" data-a="say" data-t="Hallo! Ich bin Selina. Schön, dass du da bist." aria-label="Écouter la voix">${ICON_SPEAK}</button></div>
         ${(() => { const v = pickVoice(); return v && voiceTier(v) >= 2 ? `<span class="meta">Voix utilisée : <b>${esc(v.name)}</b>, ${voiceLabel(v)}${voiceTier(v) >= 3 ? " (Premium)" : " (améliorée)"}.</span>`
-          : `<p class="voice-tip"><b>Pour une voix vraiment humaine (gratuit) :</b> sur l’iPhone, Réglages › Accessibilité › Contenu énoncé › Voix › Allemand › touchez <b>Anna</b> et téléchargez la version <b>Premium</b> (en wifi). Redémarrez ensuite le téléphone : Lena la prendra toute seule.</p>`; })()}
+          : `<p class="voice-tip"><b>Pour une voix vraiment humaine (gratuit) :</b> sur l’iPhone, Réglages › Accessibilité › Contenu énoncé › Voix › Allemand › touchez <b>Anna</b> et téléchargez la version <b>Premium</b> (en wifi). Redémarrez ensuite le téléphone : Selina la prendra toute seule.</p>`; })()}
       </div>
       <div class="field"><span class="lab">Vitesse de la voix</span><div class="seg" role="group" aria-label="Vitesse">
         ${[[0.75,"Lente"],[0.9,"Normale"],[1,"Rapide"]].map(([r,l]) => `<button data-a="rate" data-v="${r}" aria-pressed="${state.settings.rate===r}">${l}</button>`).join("")}
@@ -1569,7 +1591,7 @@ function startSession(kind, id){
   sessEl.hidden = false; document.body.classList.add("locked");
   clearInterval(tick); tick = setInterval(updateTimer, 1000);
   sess.turns.push({role:"user", content:turnNote() + "\n(The learner has just opened the session. Greet them warmly" + (state.profile.name ? " by their first name" : "") + (sess.test ? ", explain in one short sentence how the test works, and ask the first question.)" : " and start.)")});
-  callLena();
+  callSelina();
 }
 function sessionTitle(){
   if (sess.unit) return `${sess.unit.fr} · ${KINDS[sess.kind].fr}`;
@@ -1592,8 +1614,8 @@ function sessionShell(){
   <div class="s-body">
     <aside class="stage">
       ${lenaSVG()}
-      <div class="who"><h2>Lena</h2><p class="status" id="status" aria-live="polite">Lena arrive…</p></div>
-      <div class="acts"><button class="ico sm" data-a="replay" aria-label="Réécouter Lena">${ICON_SPEAK}</button><button class="ico sm" data-a="replay-slow" aria-label="Réécouter lentement">${ICON_SLOW}</button></div>
+      <div class="who"><h2>Selina</h2><p class="status" id="status" aria-live="polite">Selina arrive…</p></div>
+      <div class="acts"><button class="ico sm" data-a="replay" aria-label="Réécouter Selina">${ICON_SPEAK}</button><button class="ico sm" data-a="replay-slow" aria-label="Réécouter lentement">${ICON_SLOW}</button></div>
     </aside>
     <div class="convo" id="convo">
       <div class="chat" id="chat" aria-live="polite"></div>
@@ -1662,7 +1684,7 @@ function rules(){
     const pool = sess.kind === "examen" ? unitsOf(lvl) : startedUnits(lvl);
     plan = `${sess.kind === "examen" ? "MOCK EXAM" : "REVIEW"} for level ${lvl}. Units covered: ${pool.map(u => `${u.n}. ${u.de} (${u.words.slice(0, 5).join(", ")})`).join("; ") || "the A1 basics"}.`;
   }
-  return `You are Lena, 34, a warm, cheerful and curious German teacher. You grew up in Bern, studied in Munich, and now live in Bern again, in the Länggasse, with your cat Brezel. You go everywhere by Velo along the Aare, hike in the Bernese Oberland at weekends, love Italian food (pistachio gelato above all) and once spent a summer in Rome. The learner lives near Bern too. You give a short spoken session (5 to 10 minutes, about ${sess.target} learner turns) to an adult French speaker at CEFR level ${lvl}${lvl === "A1" ? " (beginner)" : " (elementary: knows the A1 basics)"}. Your German is read aloud by a speech synthesizer and shown on screen.
+  return `You are Selina, 34, a warm, cheerful and curious German teacher. You grew up in Bern, studied in Munich, and now live in Bern again, in the Länggasse, with your cat Brezel. You go everywhere by Velo along the Aare, hike in the Bernese Oberland at weekends, love Italian food (pistachio gelato above all) and once spent a summer in Rome. The learner lives near Bern too. You give a short spoken session (5 to 10 minutes, about ${sess.target} learner turns) to an adult French speaker at CEFR level ${lvl}${lvl === "A1" ? " (beginner)" : " (elementary: knows the A1 basics)"}. Your German is read aloud by a speech synthesizer and shown on screen.
 
 LEARNER
 ${learnerProfile()}
@@ -1722,10 +1744,10 @@ function cleanReply(r){
   };
 }
 
-async function callLena(){
+async function callSelina(){
   if (!sess || !sampleFn) return;
   sess.busy = true; sess.error = null; sess.suggestions = [];
-  setLena("thinking"); setStatus("Lena réfléchit…"); renderChat(); renderSuggest(); lockInput(true);
+  setSelina("thinking"); setStatus("Selina réfléchit…"); renderChat(); renderSuggest(); lockInput(true);
   const ctl = new AbortController(); sess.ctl = ctl;
   const mine = sess;
   let early = null, earlyDone = false;
@@ -1736,8 +1758,8 @@ async function callLena(){
     try { early = JSON.parse('"' + m[1] + '"').trim(); } catch(e) { early = ""; }
     if (!early) return;
     sess.preview = early; renderChat();
-    setStatus("Lena parle…");
-    speak(early, {onend: () => { earlyDone = true; if (sess === mine && !sess.busy) afterLenaSpoke(); }});
+    setStatus("Selina parle…");
+    speak(early, {onend: () => { earlyDone = true; if (sess === mine && !sess.busy) afterSelinaSpoke(); }});
   };
   try {
     const raw = await sampleFn.json([{role:"user", content:rules()}, ...sess.turns], {modelTier:"quick", cache:false, signal:ctl.signal, onText});
@@ -1751,7 +1773,7 @@ async function callLena(){
       if (sess.n >= sess.target) r.end = true;
     }
     sess.turns.push({role:"assistant", content:JSON.stringify({audio:r.audio, de:r.de, exercise:r.exercise ? {question:r.exercise.question, options:r.exercise.options} : null, testResult:r.testResult, end:r.end})});
-    rememberLena(r);
+    rememberSelina(r);
     if (r.correction){ const last = [...sess.log].reverse().find(m => m.t === "me"); if (last) last.correction = r.correction; }
     sess.log.push({t:"lena", d:r, fr:state.settings.showFr && !sess.test});
     r.newWords.forEach(addWord);
@@ -1759,11 +1781,11 @@ async function callLena(){
     sess.busy = false;
     if (r.end) sess.ended = true;
     renderChat(); renderSuggest(); lockInput(false);
-    if (early && early === r.de){ if (earlyDone || !("speechSynthesis" in window) || !voices.length) afterLenaSpoke(); }
+    if (early && early === r.de){ if (earlyDone || !("speechSynthesis" in window) || !voices.length) afterSelinaSpoke(); }
     else {
-      setStatus("Lena parle…");
-      speak(r.audio ? r.audio + " … " + r.de : r.de, {onend: () => { if (sess === mine) afterLenaSpoke(); }});
-      if (!("speechSynthesis" in window) || !voices.length) afterLenaSpoke();
+      setStatus("Selina parle…");
+      speak(r.audio ? r.audio + " … " + r.de : r.de, {onend: () => { if (sess === mine) afterSelinaSpoke(); }});
+      if (!("speechSynthesis" in window) || !voices.length) afterSelinaSpoke();
     }
   } catch(e){
     if (sess !== mine) return;
@@ -1771,27 +1793,27 @@ async function callLena(){
     if (e && e.code === "cancelled") return;
     const code = e && e.code;
     sess.error = ["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"].includes(code)
-      ? {msg:"Lena ne peut pas répondre : la clé Google manque.", retry:false}
+      ? {msg:"Selina ne peut pas répondre : la clé Google manque.", retry:false}
       : code === "bad_key" ? {msg:"La clé Google n’est pas acceptée : vérifiez-la dans Réglages.", retry:false}
       : code === "rate_limited" ? {msg:"Trop de messages d’un coup, ou limite d’utilisation atteinte. Réessayez dans un moment.", retry:true}
       : code === "session_expired" ? {msg:"La connexion a expiré : réessayez.", retry:true}
-      : {msg:"Lena n’a pas compris la réponse reçue. Redemandez-lui.", retry:true};
+      : {msg:"Selina n’a pas compris la réponse reçue. Redemandez-lui.", retry:true};
     if (sess.error && !sess.error.retry && code !== "bad_key") { sampleState = "absent"; }
-    setLena("idle"); setStatus("Pas de réponse", "err"); renderChat(); lockInput(false);
+    setSelina("idle"); setStatus("Pas de réponse", "err"); renderChat(); lockInput(false);
   }
 }
-function afterLenaSpoke(){
+function afterSelinaSpoke(){
   if (!sess || sess.busy) return;
   if (sess.ended){ setStatus("Séance terminée", "go"); renderChat(); return; }
   setStatus("À vous !", "go");
-  setLena("idle");
+  setSelina("idle");
 }
 function lockInput(on){
   const b = document.getElementById("send"); if (b) b.disabled = on || !sess || sess.ended;
   const t = document.getElementById("reply"); if (t) t.disabled = !sess || sess.ended;
 }
-/* Ce que Lena a déjà demandé et ce que l'apprenant a déjà dit : rappelé à chaque tour pour qu'elle ne se répète pas */
-function rememberLena(r){
+/* Ce que Selina a déjà demandé et ce que l'apprenant a déjà dit : rappelé à chaque tour pour qu'elle ne se répète pas */
+function rememberSelina(r){
   const qs = r.de.match(/[^.!?]*\?/g) || [];
   qs.map(q => q.trim()).filter(Boolean).forEach(q => { if (!sess.asked.includes(q)) sess.asked.push(q); });
   let changed = false;
@@ -1838,7 +1860,7 @@ function sendReply(text){
   sess.log.push({t:"me", text, correction:null});
   sess.turns.push({role:"user", content:`${turnNote()}\n${text}`});
   const t = document.getElementById("reply"); if (t){ t.value = ""; t.style.height = ""; }
-  callLena();
+  callSelina();
 }
 function answerExercise(i, k){
   const m = sess && sess.log[i]; if (!m || !m.d.exercise || m.d.exercise.chosen !== null || sess.busy) return;
@@ -1846,14 +1868,14 @@ function answerExercise(i, k){
   const ok = k === ex.answer;
   renderChat();
   sess.turns.push({role:"user", content:`[exercise answer, ${elapsedMin()} min elapsed] The learner chose "${ex.options[k]}": ${ok ? "correct" : `wrong, the right answer was "${ex.options[ex.answer]}"`}. React in one short sentence and continue the lesson with something new. No exercise this turn. Questions you already asked (never ask them again): ${sess.asked.slice(-12).join(" / ") || "none"}`});
-  setTimeout(callLena, 900);
+  setTimeout(callSelina, 900);
 }
 
 /* ---------- Bilan ---------- */
 function transcript(){
   return sess.log.map(m => {
     if (m.t === "me") return `Learner: ${m.text}` + (m.correction ? `\n  (correction: "${m.correction.wrong}" → "${m.correction.right}")` : "");
-    let s = `Lena: ${m.d.de}`;
+    let s = `Selina: ${m.d.de}`;
     if (m.d.exercise){ const e = m.d.exercise; s += `\n  (exercise: ${e.question} → ${e.chosen === null ? "not answered" : e.chosen === e.answer ? "correct" : "wrong"})`; }
     return s;
   }).join("\n");
@@ -1867,9 +1889,9 @@ async function openRecap(){
   renderRecap();
   if (!sess.recap.loading) return;
   const mine = sess;
-  setLena("thinking");
+  setSelina("thinking");
   if (sess.test) sess.score = testScore(sess.results, sess.target);
-  const prompt = `You are Lena, a German teacher. Below is the transcript of a short ${sess.lvl} session with a French-speaking learner.
+  const prompt = `You are Selina, a German teacher. Below is the transcript of a short ${sess.lvl} session with a French-speaking learner.
 Session: ${sessionTitle()}.${sess.test ? `\nThis was a test: the learner scored ${sess.score} % (${sess.results.filter(x => x === "correct").length} correct, ${sess.results.filter(x => x === "partial").length} partly correct, out of ${sess.target}). The pass mark is ${KINDS[sess.kind].pass} %. Base "stars" on the score.` : ""}
 Write a short, encouraging review in French. Reply with only this JSON object:
 {"stars": 1 to 3 (3 = most answers right, 2 = good effort with several mistakes, 1 = very hard), "bravo": "one warm sentence in French", "bravoDe": "the same idea in very simple German", "strengths": ["up to 3 things done well, in French"], "toWork": ["up to 3 short, concrete points to practise, in French, each with the correct German form"], "words": [{"de": "der Kaffee", "fr": "le café"}], "tip": "one practical tip for next time, in French"}
@@ -1892,13 +1914,13 @@ ${transcript().slice(-12000)}`;
     sess.recap = rec;
     saveSession(rec);
     renderRecap();
-    setLena("happy");
+    setSelina("happy");
     speak(rec.bravoDe);
   } catch(e){
     if (sess !== mine) return;
     sess.recap = {loading:false, failed:true};
     saveSession(null);
-    renderRecap(); setLena("idle");
+    renderRecap(); setSelina("idle");
   }
 }
 function saveSession(rec){
@@ -1985,7 +2007,7 @@ function startCards(){
   const t = todayStr(), d = deck();
   const due = shuffle(d.filter(c => state.cards[c.id] && state.cards[c.id].due <= t)).slice(0, 40);
   const newLeft = Math.max(0, NEW_PER_DAY - (state.best.newDay === t ? state.best.newCount || 0 : 0));
-  /* Les nouvelles cartes suivent le parcours : d'abord les mots vus avec Lena, puis ceux des unités commencées, puis les suivants */
+  /* Les nouvelles cartes suivent le parcours : d'abord les mots vus avec Selina, puis ceux des unités commencées, puis les suivants */
   const started = new Set(UNITS.filter(u => Object.keys(unitState(u.id).steps).length).map(u => u.id));
   const rank = c => c.t === "lena" ? 0 : started.has(c.t) ? 1 : 2;
   const fresh = d.filter(c => !state.cards[c.id]).map((c, i) => [c, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(x => x[0]).slice(0, newLeft);
@@ -2013,7 +2035,7 @@ function renderCards(){
   const s = state.cards[c.id];
   if (!d.dir[d.i]) d.dir[d.i] = cardFront(c);
   const front = d.dir[d.i];
-  const label = c.t === "lena" ? "Vu avec Lena" : (THEMES[c.t] || "");
+  const label = c.t === "lena" ? "Vu avec Selina" : (THEMES[c.t] || "");
   const deSide = `<p class="fl-de" lang="de">${artHTML(c)}</p>`;
   const frSide = `<p class="fl-fr">${esc(c.fr)}</p>`;
   drillEl.innerHTML = drillTop("Cartes", `${d.q.length - d.i} restantes`, d.i, d.q.length) + `
@@ -2081,7 +2103,7 @@ function makeVerbQs(only){
   const qs = [];
   for (let k = 0; k < 10; k++){
     const v = pick(pool), p = Math.floor(Math.random() * 6);
-    const pron = p === 2 ? pick(["er","Lena"]) : p === 5 ? pick(["Sie","sie"]) : ["ich","du","","wir","ihr"][p];
+    const pron = p === 2 ? pick(["er","Selina"]) : p === 5 ? pick(["Sie","sie"]) : ["ich","du","","wir","ihr"][p];
     const hintP = pron === "sie" ? " (ils)" : pron === "Sie" ? " (vous, poli)" : "";
     if (lv === "A2" && v.pp && Math.random() < 0.4){
       const right = perfekt(v, p);
@@ -2221,15 +2243,15 @@ function renderChat(){
       </div>`;
     }
   });
-  if (sess.busy) html += sess.preview ? `<div class="msg lena-msg"><div class="say"><p class="de" lang="de">${esc(sess.preview)}</p><div class="typing-inline" aria-hidden="true"><i></i><i></i><i></i></div></div></div>` : `<div class="typing" aria-label="Lena écrit"><i></i><i></i><i></i></div>`;
-  if (sess.error) html += `<div class="notice"><b>${esc(sess.error.msg)}</b>${sess.error.retry ? `<div class="row" style="margin-top:10px"><button class="btn small" data-a="retry">Redemander à Lena</button></div>` : ""}</div>`;
+  if (sess.busy) html += sess.preview ? `<div class="msg lena-msg"><div class="say"><p class="de" lang="de">${esc(sess.preview)}</p><div class="typing-inline" aria-hidden="true"><i></i><i></i><i></i></div></div></div>` : `<div class="typing" aria-label="Selina écrit"><i></i><i></i><i></i></div>`;
+  if (sess.error) html += `<div class="notice"><b>${esc(sess.error.msg)}</b>${sess.error.retry ? `<div class="row" style="margin-top:10px"><button class="btn small" data-a="retry">Redemander à Selina</button></div>` : ""}</div>`;
   if (sess.ended && !sess.busy) html += `<button class="btn block" data-a="recap">Voir mon bilan</button>`;
   chat.innerHTML = html; swiss(chat);
   chat.scrollTop = chat.scrollHeight;
 }
-/* « Pourquoi ? » : Lena décortique la phrase, mot par mot, en français */
+/* « Pourquoi ? » : Selina décortique la phrase, mot par mot, en français */
 function whyHTML(w){
-  if (w.loading) return `<div class="why-card"><span class="eyebrow">Pourquoi ?</span><p class="meta">Lena décortique la phrase…</p></div>`;
+  if (w.loading) return `<div class="why-card"><span class="eyebrow">Pourquoi ?</span><p class="meta">Selina décortique la phrase…</p></div>`;
   if (w.error) return `<div class="why-card"><span class="eyebrow">Pourquoi ?</span><p class="meta">${esc(w.error)}</p></div>`;
   const d = w.data;
   return `<div class="why-card"><span class="eyebrow">Pourquoi ?</span>
@@ -2259,7 +2281,7 @@ At most 3 rules, the most useful ones. Simple, friendly French, no jargon withou
     m.why = {data:{parts, rules, trap:String(r && r.trap || "")}};
   } catch(e){
     if (sess !== mine) return;
-    m.why = {error:e && e.code === "rate_limited" ? "Trop de demandes d’un coup : réessayez dans un moment." : "Lena n’a pas pu expliquer cette phrase. Touchez à nouveau « Pourquoi ? »."};
+    m.why = {error:e && e.code === "rate_limited" ? "Trop de demandes d’un coup : réessayez dans un moment." : "Selina n’a pas pu expliquer cette phrase. Touchez à nouveau « Pourquoi ? »."};
     m.whyCache = null;
   }
   const c = document.getElementById("chat"); const keep = c ? c.scrollTop : 0; renderChat(); if (c) c.scrollTop = keep;
@@ -2286,8 +2308,8 @@ function renderRecap(){
   const K = KINDS[sess.kind];
   const passed = sess.test && sess.score >= K.pass;
   let body;
-  if (r.loading) body = `<div class="head"><p class="eyebrow">Bilan</p><h2>Lena relit la séance…</h2><p class="meta">Quelques secondes.</p></div>`;
-  else if (r.failed) body = `<div class="head"><p class="eyebrow">Bilan</p><h2>Séance enregistrée.</h2><p class="meta">Lena n’a pas pu écrire le bilan cette fois. Vos minutes, vos points et votre leçon sont bien comptés.</p></div>
+  if (r.loading) body = `<div class="head"><p class="eyebrow">Bilan</p><h2>Selina relit la séance…</h2><p class="meta">Quelques secondes.</p></div>`;
+  else if (r.failed) body = `<div class="head"><p class="eyebrow">Bilan</p><h2>Séance enregistrée.</h2><p class="meta">Selina n’a pas pu écrire le bilan cette fois. Vos minutes, vos points et votre leçon sont bien comptés.</p></div>
     <div class="actions"><button class="btn block" data-a="home">Retour à l’accueil</button></div>`;
   else body = `
     <div class="head"><p class="eyebrow">${sess.test ? "Résultat" : "Bilan de la séance"} · ${esc(sessionTitle())}</p>
@@ -2296,7 +2318,7 @@ function renderRecap(){
     <p>${esc(r.bravo)}</p>
     <p class="xp-won">+${sess.xpWon || 0} XP</p></div>
     ${r.strengths.length ? `<div class="card"><h3>Ce qui va bien</h3><ul>${r.strengths.map(s => `<li>${esc(s)}</li>`).join("")}</ul></div>` : ""}
-    ${r.toWork.length ? `<div class="card"><h3>À travailler</h3><ul>${r.toWork.map(s => `<li>${esc(s)}</li>`).join("")}</ul><p class="meta" style="margin-top:8px">Lena s’en souviendra à la prochaine séance.</p></div>` : ""}
+    ${r.toWork.length ? `<div class="card"><h3>À travailler</h3><ul>${r.toWork.map(s => `<li>${esc(s)}</li>`).join("")}</ul><p class="meta" style="margin-top:8px">Selina s’en souviendra à la prochaine séance.</p></div>` : ""}
     ${r.words.length ? `<div><h3>Les mots de la séance</h3><p class="meta" style="margin-bottom:8px">Ils rejoignent vos cartes à mémoriser.</p><div class="words">${r.words.map(w => `<div class="word"><button class="ico sm" data-a="say" data-t="${esc(w.de)}" aria-label="Écouter ${esc(w.de)}">${ICON_SPEAK}</button><span class="w"><b lang="de">${esc(w.de)}</b><span>${esc(w.fr)}</span></span></div>`).join("")}</div></div>` : ""}
     ${r.tip ? `<p class="notice"><b>Conseil :</b> ${esc(r.tip)}</p>` : ""}
     <div class="actions">
@@ -2305,7 +2327,7 @@ function renderRecap(){
       <button class="btn ghost block" data-a="home">Retour à l’accueil</button>
     </div>`;
   convo.innerHTML = `<div class="recap"><div class="in">${body}</div></div>`; swiss(convo);
-  setStatus(r.loading ? "Lena relit la séance…" : "Bis bald!", r.loading ? "" : "go");
+  setStatus(r.loading ? "Selina relit la séance…" : "Bis bald!", r.loading ? "" : "go");
   updateTimer();
 }
 function closeSession(){
@@ -2341,7 +2363,7 @@ document.addEventListener("click", e => {
   else if (a === "idk") sendReply("Ich weiß nicht… (je ne sais pas quoi dire, aide-moi)");
   else if (a === "tip"){ const t = document.getElementById("tip"); if (t) t.hidden = !t.hidden; }
   else if (a === "opt") answerExercise(+b.dataset.i, +b.dataset.k);
-  else if (a === "retry"){ if (sess && !sess.busy) callLena(); }
+  else if (a === "retry"){ if (sess && !sess.busy) callSelina(); }
   else if (a === "quit"){ if (!sess) return; if (sess.phase === "recap" || sess.n < 2) closeSession(); else openRecap(); }
   else if (a === "recap") openRecap();
   else if (a === "home") closeSession();
@@ -2360,7 +2382,7 @@ document.addEventListener("click", e => {
   else if (a === "rate"){ state.settings.rate = +b.dataset.v; touch(); renderHome(); speak("So klingt meine Stimme."); }
   else if (a === "showfr"){ state.settings.showFr = b.dataset.v === "1"; touch(); renderHome(); }
   else if (a === "reset"){
-    document.getElementById("resetRow").innerHTML = `<span class="meta">Effacer leçons, points, cartes et souvenirs de Lena ?</span><button class="btn small" data-a="reset-yes">Oui, tout effacer</button><button class="btn ghost small" data-a="reset-no">Annuler</button>`;
+    document.getElementById("resetRow").innerHTML = `<span class="meta">Effacer leçons, points, cartes et souvenirs de Selina ?</span><button class="btn small" data-a="reset-yes">Oui, tout effacer</button><button class="btn ghost small" data-a="reset-no">Annuler</button>`;
   }
   else if (a === "reset-yes"){ const keep = {profile:state.profile, settings:state.settings}; state = {...defaultState(), ...keep}; touch(); renderHome(); }
   else if (a === "reset-no") renderHome();
@@ -2392,7 +2414,7 @@ document.addEventListener("input", e => {
 });
 document.addEventListener("change", e => {
   if (e.target.id === "gkey"){ gSetKey(e.target.value.trim()); location.reload(); return; }
-  if (e.target.id === "voice"){ state.settings.voice = e.target.value; touch(); speak("Hallo! Ich bin Lena."); }
+  if (e.target.id === "voice"){ state.settings.voice = e.target.value; touch(); speak("Hallo! Ich bin Selina."); }
 });
 
 /* ---------- Démarrage ---------- */
@@ -2403,6 +2425,20 @@ if ("speechSynthesis" in window){
   setTimeout(() => { voicesChecked = true; loadVoices(); if (!sess && !drill) renderHome(); }, 1500);
 }
 renderHome();
+
+/* Les images de Selina, gardées dans le téléphone (la même mémoire que « Parler avec Selina ») */
+(function loadFace(){
+  try {
+    const r = indexedDB.open("lena-orale", 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("files");
+    r.onsuccess = () => {
+      const db = r.result; if (!db.objectStoreNames.contains("files")) return;
+      const st = db.transaction("files").objectStore("files"), got = {};
+      let n = 0;
+      ["smile","talk","blink"].forEach(k => { const q = st.get("face_" + k); q.onsuccess = () => { if (q.result) got[k] = URL.createObjectURL(q.result); if (++n === 3 && got.smile && got.talk && got.blink){ faceUrls = got; if (!sess && !drill) renderHome(); } }; });
+    };
+  } catch(e) {}
+})();
 
 (async () => {
   if (!window.claude || typeof window.claude.use !== "function"){ sampleState = "absent"; renderHome(); return; }
