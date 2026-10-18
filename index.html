@@ -480,10 +480,12 @@ $("mute").addEventListener("click", () => { muted = !muted; $("mute").setAttribu
 /* ---------- Réglages ---------- */
 function fillSettings(){ $("apikey").value = cfg.apiKey; $("pname").value = cfg.name; $("voice").value = cfg.voice; $("level").value = cfg.level; $("headset").checked = cfg.headset; }
 $("openSettings").addEventListener("click", () => { fillSettings(); $("settings").showModal(); });
-$("settingsForm").addEventListener("submit", () => {
-  cfg.apiKey = $("apikey").value.trim(); cfg.name = $("pname").value.trim(); cfg.voice = $("voice").value; cfg.level = $("level").value; cfg.headset = $("headset").checked; saveCfg();
-});
+/* Chaque réglage s'enregistre dès qu'il est saisi (et avant le rechargement qui suit le choix d'un avatar) */
+function readSettings(){ cfg.apiKey = $("apikey").value.trim(); cfg.name = $("pname").value.trim(); cfg.voice = $("voice").value; cfg.level = $("level").value; cfg.headset = $("headset").checked; saveCfg(); }
+$("settingsForm").addEventListener("submit", readSettings);
+["apikey","pname","voice","level","headset"].forEach(id => { $(id).addEventListener("input", readSettings); $(id).addEventListener("change", readSettings); });
 $("avatarFile").addEventListener("change", async e => {
+  readSettings();
   const f = e.target.files && e.target.files[0]; if (!f) return;
   const head4 = new Uint8Array(await f.slice(0, 4).arrayBuffer());
   if (String.fromCharCode(...head4) !== "glTF"){ $("avatarState").textContent = "Ce fichier n’est pas un avatar .glb. Exportez-le depuis Avaturn au format GLB."; return; }
@@ -497,6 +499,7 @@ renderTopics();
 fillSettings();
 loadAvatar();
 if (!cfg.apiKey) setTimeout(() => { if (!$("settings").open) { fillSettings(); $("settings").showModal(); } }, 600);
+else if (navigator.standalone === false || !window.matchMedia("(display-mode: standalone)").matches) {} /* rien */
 </script>
 </body>
 </html>
