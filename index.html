@@ -161,6 +161,9 @@ a{color:var(--accent)}
     <div class="field"><label for="pname">Votre prénom</label><input id="pname" autocomplete="given-name" placeholder="Lena vous appellera ainsi"></div>
     <div class="field"><label for="voice">Voix de Lena</label>
       <select id="voice"><option value="Aoede">Aoede · douce et chaleureuse</option><option value="Kore">Kore · claire et posée</option><option value="Leda">Leda · jeune et vive</option><option value="Zephyr">Zephyr · lumineuse</option></select></div>
+    <div class="field"><label for="model">Modèle vocal</label>
+      <select id="model"><option value="auto">Automatique (le premier qui marche)</option><option value="gemini-3.8-live">Gemini 3.8 Live</option><option value="gemini-3.1-flash-live-preview">Gemini 3.1 Flash Live</option><option value="gemini-2.5-flash-native-audio-preview-12-2025">Gemini 2.5 Flash (audio natif)</option></select>
+      <span class="meta">À changer seulement si Lena ne répond pas.</span></div>
     <div class="field"><label for="level">Votre niveau</label>
       <select id="level"><option value="A1">A1 · débutant</option><option value="A2">A2 · élémentaire</option></select></div>
     <label class="switch"><span><span class="lab">Avec un casque ou des écouteurs</span><br><span class="meta">Vous pourrez couper la parole à Lena. Sans casque, laissez décoché : le micro se met en pause quand elle parle, pour qu’elle ne s’entende pas elle-même.</span></span><input type="checkbox" id="headset"></label>
@@ -191,7 +194,7 @@ const TOPICS = [
 
 /* ---------- Réglages, gardés sur ce téléphone uniquement ---------- */
 const KEY = "lena-orale.v1";
-let cfg = {apiKey:"", name:"", voice:"Aoede", level:"A1", headset:false, topic:"libre"};
+let cfg = {apiKey:"", name:"", voice:"Aoede", level:"A1", headset:false, topic:"libre", model:"auto"};
 try { cfg = {...cfg, ...JSON.parse(localStorage.getItem(KEY) || "{}")}; } catch(e) {}
 const saveCfg = () => { try { localStorage.setItem(KEY, JSON.stringify(cfg)); } catch(e) {} };
 
@@ -302,13 +305,13 @@ async function setupLips(){
 }
 
 /* ---------- La conversation (Gemini Live) ---------- */
-let speakUntil = 0, chunks = 0, model = "";
+let speakUntil = 0, chunks = 0, model = "", lastModel = "", lastMsg = "";
 let connecting = false, live = false, session = null, mic = null, muted = false, lenaSpeaking = false, startedAt = 0, tick = null, wakeLock = null;
 let curLena = null, curMe = null;
 
 function diag(extra){
   $("diag").hidden = !live;
-  $("diagText").textContent = extra || `${session && !connecting ? "Connectée" : "Connexion…"} · voix reçue : ${chunks} morceau${chunks > 1 ? "x" : ""}`;
+  $("diagText").textContent = extra || `${session && !connecting ? "Connectée" : "Connexion…"} (${(model || lastModel).replace("gemini-", "")}) · voix reçue : ${chunks} morceau${chunks > 1 ? "x" : ""}${lastMsg ? " · " + lastMsg : ""}`;
 }
 function setPill(state, text){
   $("pill").className = "pill " + state; $("pillText").textContent = text;
@@ -324,6 +327,7 @@ How to speak:
 - This is a real conversation, not a quiz: react to what the learner says with interest, share a little about yourself, then ask one natural follow-up question. Never ask again something the learner already told you.
 - When the learner makes a mistake, repeat their idea correctly in your answer, in a natural way, and add a very short tip only for important mistakes.
 - If the learner is stuck or speaks French, help briefly in French (one sentence), give them the German sentence to say, and invite them to repeat it.
+- The learner speaks German with a French accent, sometimes French. Never answer in Spanish or English.
 - Start by greeting the learner warmly (Grüessech is fine as a Bernese hello), then start the topic.`;
 }
 function addMsg(who, text){
@@ -353,6 +357,8 @@ const unb64 = str => { const bin = atob(str), u = new Uint8Array(bin.length); fo
 function onMessage(msg){
   if (typeof msg?.data === "string"){ try { msg = JSON.parse(msg.data); } catch(e) { return; } }
   if (msg.setupComplete && session && session._resolveReady) session._resolveReady();
+  lastMsg = Object.keys(msg).filter(k => msg[k] !== undefined).join(",") + (msg.serverContent ? ":" + Object.keys(msg.serverContent).join("+") : "");
+  diag();
   const sc = msg.serverContent; if (!sc) { if (msg.goAway) showError("La séance arrive à sa limite de 15 minutes : touchez le bouton pour en recommencer une."); return; }
   if (sc.interrupted){ if (head) head.streamInterrupt(); lenaSpeaking = false; closeTurn("lena"); setPill("listening", "Je vous écoute…"); }
   if (sc.inputTranscription?.text){ if (curLena) closeTurn("lena"); appendTo("me", sc.inputTranscription.text); }
@@ -387,7 +393,8 @@ function playFallback(buf){
 async function connect(){
   const ai = new GoogleGenAI({ apiKey: cfg.apiKey });
   let lastErr = "";
-  for (const m of MODELS){ model = m;
+  const list = cfg.model && cfg.model !== "auto" ? [cfg.model] : MODELS;
+  for (const m of list){ model = m; lastModel = m;
     try {
       let resolveReady, rejectReady;
       const ready = new Promise((res, rej) => { resolveReady = res; rejectReady = rej; });
@@ -404,8 +411,8 @@ async function connect(){
         callbacks: {
           onopen: () => {},
           onmessage: onMessage,
-          onerror: e => { lastErr = (e && (e.message || e.error?.message)) || "erreur réseau"; diag("Erreur : " + lastErr); },
-          onclose: e => { closed = true; lastErr = (e && e.reason) || lastErr; rejectReady(new Error(lastErr || "fermée")); if (!connecting && live && session === s) { stop(); showError(closeMessage(lastErr)); } }
+          onerror: e => { lastErr = (e && (e.message || e.error?.message)) || ""; if (lastErr) diag("Erreur : " + lastErr); },
+          onclose: e => { closed = true; lastErr = (e && e.reason) ? `${e.reason} (code ${e.code})` : (e && e.code && e.code !== 1000 ? `code ${e.code}` + (lastErr ? ", " + lastErr : "") : lastErr); rejectReady(new Error(lastErr || "fermée")); if (!connecting && live && session === s) { stop(); showError(closeMessage(lastErr)); } }
         }
       });
       s._resolveReady = resolveReady; session = s;
@@ -423,7 +430,7 @@ function closeMessage(reason){
   if (/api key|API_KEY_INVALID|401|403|permission/i.test(reason)) return "La clé Google n’est pas acceptée. Vérifiez-la dans les réglages (roue dentée).";
   if (/quota|429|RESOURCE_EXHAUSTED|rate/i.test(reason)) return "La limite gratuite du moment est atteinte. Réessayez un peu plus tard.";
   if (/location|region|not supported in your country/i.test(reason)) return "Google refuse cette fonction depuis votre pays avec l’offre gratuite.";
-  return "La conversation s’est arrêtée (" + (reason || "connexion perdue") + "). Touchez le bouton pour reprendre.";
+  return "La conversation s’est arrêtée. Raison donnée par Google : « " + (reason || "aucune") + " » (modèle " + (lastModel || "?") + "). Faites une capture de ce message.";
 }
 
 /* Le micro : son capté à 16 kHz, envoyé par petits morceaux de 100 ms */
@@ -498,12 +505,12 @@ $("big").addEventListener("click", () => live ? stop() : start());
 $("mute").addEventListener("click", () => { muted = !muted; $("mute").setAttribute("aria-pressed", String(muted)); setPill(muted ? "err" : "listening", muted ? "Micro coupé" : "Je vous écoute…"); });
 
 /* ---------- Réglages ---------- */
-function fillSettings(){ $("apikey").value = cfg.apiKey; $("pname").value = cfg.name; $("voice").value = cfg.voice; $("level").value = cfg.level; $("headset").checked = cfg.headset; }
+function fillSettings(){ $("model").value = cfg.model || "auto"; $("apikey").value = cfg.apiKey; $("pname").value = cfg.name; $("voice").value = cfg.voice; $("level").value = cfg.level; $("headset").checked = cfg.headset; }
 $("openSettings").addEventListener("click", () => { fillSettings(); $("settings").showModal(); });
 /* Chaque réglage s'enregistre dès qu'il est saisi (et avant le rechargement qui suit le choix d'un avatar) */
-function readSettings(){ cfg.apiKey = $("apikey").value.trim(); cfg.name = $("pname").value.trim(); cfg.voice = $("voice").value; cfg.level = $("level").value; cfg.headset = $("headset").checked; saveCfg(); }
+function readSettings(){ cfg.model = $("model").value; cfg.apiKey = $("apikey").value.trim(); cfg.name = $("pname").value.trim(); cfg.voice = $("voice").value; cfg.level = $("level").value; cfg.headset = $("headset").checked; saveCfg(); }
 $("settingsForm").addEventListener("submit", readSettings);
-["apikey","pname","voice","level","headset"].forEach(id => { $(id).addEventListener("input", readSettings); $(id).addEventListener("change", readSettings); });
+["apikey","pname","voice","level","headset","model"].forEach(id => { $(id).addEventListener("input", readSettings); $(id).addEventListener("change", readSettings); });
 $("avatarFile").addEventListener("change", async e => {
   readSettings();
   const f = e.target.files && e.target.files[0]; if (!f) return;
