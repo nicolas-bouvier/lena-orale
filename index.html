@@ -90,7 +90,7 @@ svg.i{width:22px;height:22px;flex:none}
 .hero{position:relative;overflow:hidden;border-radius:28px;padding:20px 20px 22px;color:var(--hero-ink);
   background:radial-gradient(120% 90% at 0% 0%,var(--hero2) 0%,var(--hero) 62%);display:flex;flex-direction:column;gap:18px;box-shadow:var(--shadow)}
 .hero-head{display:grid;grid-template-columns:104px 1fr;gap:14px;align-items:center}
-.hero .lena{width:104px;height:104px;--lena-bg:rgba(247,242,234,.12)}
+.hero .lena{width:120px;height:120px;--lena-bg:rgba(247,242,234,.12)}
 .hero-say{position:relative;background:rgba(247,242,234,.1);border:1px solid var(--hero-line);border-radius:18px 18px 18px 6px;padding:12px 14px;display:flex;flex-direction:column;gap:3px;min-width:0}
 .hero-say .de{font-family:var(--f-display);font-size:1.45rem;font-weight:600;line-height:1.15;color:var(--hero-ink)}
 .hero-say .fr{font-size:.85rem;color:var(--hero-mute)}
@@ -441,8 +441,6 @@ button.pill:hover:not(:disabled){filter:brightness(.96)}
 .steps-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .stop-card{cursor:default}
 .tag.ok{background:var(--good-soft);color:var(--good)}
-.oral-card{display:flex;flex-direction:column;gap:12px;background:var(--gold-soft);box-shadow:none}
-.oral-card h2{font-size:1.6rem;color:var(--accent)}
 a.btn{text-decoration:none}
 .rev-card{display:flex;flex-direction:column;gap:12px}
 .rev-card h2{font-size:1.6rem;color:var(--accent)}
@@ -1407,30 +1405,14 @@ function viewHome(){
     <section class="hero" aria-labelledby="today-h">
       <div class="hero-head">
         ${lenaSVG()}
-        <div class="hero-say"><p class="de" lang="de">${esc(sayDe)}</p><p class="fr">${esc(sayFr)}${isCH() ? " (« Grüessech » : bonjour en bernois)" : ""}</p></div>
+        <div class="hero-say"><p class="de" lang="de">${esc(hi)} Wollen wir reden?</p><p class="fr">${esc(g.fr)} ! On discute ?${isCH() ? " (« Grüessech » : bonjour en bernois)" : ""}</p></div>
       </div>
-      ${nx ? `<div>
-        <p class="eyebrow">Niveau ${lvl} · unité ${nx.unit.n} sur ${total}</p>
-        <h2 id="today-h" lang="de">${esc(nx.unit.de)}</h2>
-        <p class="goal">${esc(nx.unit.fr)} · ${esc(nx.unit.goal)}</p>
+      <div>
+        <p class="eyebrow">À voix haute · 5 à 10 minutes</p>
+        <h2 id="today-h">Parler avec Selina</h2>
+        <p class="goal">Elle vous parle, vous lui répondez. La traduction et des réponses toutes prêtes s’affichent au fur et à mesure.</p>
       </div>
-      ${stepPills(nx.unit, true)}
-      ${(() => { const gr = grammarOf(nx.unit.id); return gr && nx.kind === "decouvrir" && !grammarState(gr.id).read ? `<button class="btn ghost-hero block" data-a="fiche" data-v="${gr.id}">D’abord la règle (2 min) : ${esc(gr.title)}</button>` : ""; })()}
-      <button class="btn gold block" data-a="step" data-id="${nx.unit.id}" data-k="${nx.kind}"${canTalk()?"":" disabled"}>${STEPS.indexOf(nx.kind) === 0 ? "Commencer" : "Continuer"} : ${esc(KINDS[nx.kind].fr)}</button>
-      <p class="hero-hint">${esc(KINDS[nx.kind].desc)} · environ ${nx.kind === "bilan" ? 5 : 8} minutes</p>`
-      : `<div><p class="eyebrow">Niveau ${lvl} terminé</p><h2 id="today-h" lang="de">${lvl === "A1" ? "A1 geschafft!" : "Alles geschafft!"}</h2>
-        <p class="goal">${ex && ex.passed ? `Examen blanc réussi (${ex.best} %).` : "Toutes les unités sont validées. Passez l’examen blanc pour confirmer le niveau."}</p></div>
-        ${ex && ex.passed ? (lvl === "A1" ? `<button class="btn gold block" data-a="level" data-v="A2">Passer au niveau A2</button>` : `<button class="btn gold block" data-a="revision"${canTalk()?"":" disabled"}>Faire une révision</button>`)
-          : `<button class="btn gold block" data-a="examen"${canTalk()?"":" disabled"}>Passer l’examen blanc ${lvl}</button>`}`}
-      <div class="prog"><span class="bar"><i style="width:${Math.round(done/total*100)}%"></i></span><span>${done} / ${total} unités</span></div>
-    </section>
-
-    ${sampleState === "absent" ? `<p class="notice"><b>Selina a besoin de votre clé Google (gratuite) pour vous répondre.</b> Ajoutez-la dans Réglages, ou ouvrez « Parler avec Selina » : la même clé sert partout. Les cartes, les verbes, la grammaire et le jeu der/die/das marchent sans elle.</p>` : ""}
-    ${noVoice ? `<p class="notice"><b>Pas de voix allemande sur cet appareil :</b> Selina écrira sans parler. Sur iPhone : Réglages › Accessibilité › Lire et énoncer › Voix › Allemand.</p>` : ""}
-
-    <section class="card oral-card">
-      <div><p class="eyebrow">Mains libres</p><h2>Parler avec Selina</h2><p class="meta">La conversation à voix haute, avec son visage et sa voix. Le texte et la traduction s’écrivent au fur et à mesure.</p></div>
-      <a class="btn block" href="oral.html?v=20261019f">Parler avec Selina</a>
+      <a class="btn gold block" href="oral.html?v=20261019g">Parler avec Selina</a>
     </section>
 
     ${revisionDue() ? `<section class="card rev-card"><div><p class="eyebrow">Cette semaine</p><h2>La révision</h2><p class="meta">Selina reprend vos unités validées et ce qui coince encore. Dix minutes, et les mots ne s’envolent pas.</p></div>
