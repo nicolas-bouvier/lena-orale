@@ -517,7 +517,7 @@ a.btn{text-decoration:none}
 </style>
 
 <script>/* Mise à jour : si une version plus récente est en ligne, la page se recharge d'elle-même (au démarrage et au retour dans l'application) */
-(function(){ var B = "20261019102726";
+(function(){ var B = "20261019103242";
   function check(){ try { fetch("version.txt?t=" + Date.now(), { cache: "no-store" }).then(function(r){ return r.ok ? r.text() : ""; }).then(function(t){ t = (t || "").trim();
     if (!t || t === B) return; var k = "maj-" + t; try { if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, "1"); } catch(e) {}
     location.replace(location.pathname + "?v=" + t + location.hash); }).catch(function(){}); } catch(e) {} }
@@ -1419,7 +1419,7 @@ function viewHome(){
         <h2 id="today-h">Parler avec Selina</h2>
         <p class="goal">Elle vous parle, vous lui répondez. La traduction et des réponses toutes prêtes s’affichent au fur et à mesure.</p>
       </div>
-      <a class="btn gold block" href="oral.html?v=20261019102726">Parler avec Selina</a>
+      <a class="btn gold block" href="oral.html?v=20261019103242">Parler avec Selina</a>
     </section>
 
     ${revisionDue() ? `<section class="card rev-card"><div><p class="eyebrow">Cette semaine</p><h2>La révision</h2><p class="meta">Selina reprend vos unités validées et ce qui coince encore. Dix minutes, et les mots ne s’envolent pas.</p></div>

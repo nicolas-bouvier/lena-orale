@@ -76,6 +76,9 @@ header .tools{display:flex;gap:8px}
 .lena-art .mouth-open{opacity:0;transform-box:fill-box;transform-origin:50% 0}
 .lena-art .dots{opacity:0}
 .lena-art[data-state="thinking"] .dots{opacity:1}
+.stagemsg{position:absolute;inset:0;z-index:3;display:grid;place-items:center;padding:22px;background:rgba(4,22,52,.82);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.stagemsg p{margin:0;max-width:30ch;text-align:center;color:#F7F2EA;font-size:1.05rem;font-weight:600;line-height:1.4}
+.stagemsg p b{display:block;font-family:var(--f-display);font-size:1.5rem;color:var(--gold-l,#E3C995);margin-bottom:6px}
 .loading{position:absolute;inset:0;display:grid;place-items:center;color:#F7F2EA;font-size:.95rem;text-align:center;padding:20px}
 .pill{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:999px;background:rgba(4,22,52,.62);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:#F7F2EA;font-weight:600;font-size:.9rem;white-space:nowrap}
 .pill i{width:9px;height:9px;border-radius:50%;background:#9DB7DA}
@@ -160,7 +163,7 @@ a{color:var(--accent)}
 @media (prefers-reduced-motion: reduce){ .pill i,.lena-art .eye,.lena-art .head,.lena-art .body{animation:none!important} }
 </style>
 <script>/* Mise à jour : si une version plus récente est en ligne, la page se recharge d'elle-même (au démarrage et au retour dans l'application) */
-(function(){ var B = "20261019102726";
+(function(){ var B = "20261019103242";
   function check(){ try { fetch("version.txt?t=" + Date.now(), { cache: "no-store" }).then(function(r){ return r.ok ? r.text() : ""; }).then(function(t){ t = (t || "").trim();
     if (!t || t === B) return; var k = "maj-" + t; try { if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, "1"); } catch(e) {}
     location.replace(location.pathname + "?v=" + t + location.hash); }).catch(function(){}); } catch(e) {} }
@@ -187,6 +190,7 @@ a{color:var(--accent)}
 
   <section class="stage" aria-label="Selina">
     <div id="avatar"></div>
+    <div class="stagemsg" id="stageMsg" hidden><p id="stageMsgText"></p></div>
     <div class="loading" id="loading"><span>Selina arrive… <span id="loadPct"></span></span></div>
     <span class="timer" id="timer" hidden>0:00</span>
     <span class="pill" id="pill"><i></i><span id="pillText">Prête à parler</span></span>
@@ -247,7 +251,7 @@ a{color:var(--accent)}
     <label class="switch"><span><span class="lab">Selina traduit à voix haute</span><br><span class="meta">Après chaque réplique en allemand, elle redit l’essentiel en français. Utile au tout début ; à décocher dès que vous suivez.</span></span><input type="checkbox" id="frVoice"></label>
     <label class="switch"><span><span class="lab">Avec un casque ou des écouteurs</span><br><span class="meta">Vous pourrez couper la parole à Selina. Sans casque, laissez décoché : le micro se met en pause quand elle parle, pour qu’elle ne s’entende pas elle-même.</span></span><input type="checkbox" id="headset"></label>
     <div class="row"><button class="btn" value="ok">Enregistrer</button><button class="btn ghost" type="button" id="forgetKey">Oublier la clé</button></div>
-    <p class="meta">Version du 19 octobre · 9. <button class="btn ghost" type="button" id="refresh">Mettre à jour l’application</button></p>
+    <p class="meta">Version du 19 octobre · 10. <button class="btn ghost" type="button" id="refresh">Mettre à jour l’application</button></p>
     <p class="meta">Voix et conversation : Gemini Live (Google, offre gratuite). Avatar : modèle « brunette » de Ready Player Me (CC BY-NC 4.0), animé par TalkingHead et HeadAudio (logiciels libres, licence MIT). Pour un usage personnel uniquement.</p>
   </form>
 </dialog>
@@ -626,7 +630,19 @@ Réponds uniquement en JSON : [{"de":"…","fr":"…"}, …]`;
 function showError(text){
   const el = document.createElement("div"); el.className = "notice"; el.textContent = text;
   $("hint")?.remove(); $("talk").appendChild(el); $("talk").scrollTop = $("talk").scrollHeight;
-  setPill("err", "Conversation arrêtée");
+  if (text === QUOTA_MSG){ cfg.quotaDay = googleDay(); saveCfg(); showQuota(); }
+  else { $("stageMsgText").textContent = text; $("stageMsg").hidden = false; setPill("err", "Conversation arrêtée"); }
+}
+/* La limite gratuite de Google se remet à zéro à minuit en Californie, soit 9 h en Suisse (8 h quelques semaines par an) */
+const QUOTA_MSG = "La limite gratuite du jour est atteinte.";
+const googleDay = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
+function resetHour(){
+  try { const now = new Date(), la = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" })), ch = new Date(now.toLocaleString("en-US", { timeZone: "Europe/Zurich" }));
+    return Math.round((24 * 60 + (ch - la) / 60000) / 60) % 24; } catch(e) { return 9; }
+}
+function showQuota(){
+  $("stageMsgText").innerHTML = `<b>Limite gratuite du jour atteinte</b>Google offre un nombre limité de conversations par jour. Selina revient demain à partir de ${resetHour()} h.`;
+  $("stageMsg").hidden = false; setPill("err", "Limite du jour atteinte");
 }
 
 const b64 = buf => { const u = new Uint8Array(buf); let s = ""; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); };
@@ -795,14 +811,14 @@ async function connect(){
     } catch(e) {
       lastErr = (e && e.message) || String(e);
       session = null; model = "";
-      if (/api key|API_KEY|permission|401|403|quota|429|RESOURCE_EXHAUSTED/i.test(lastErr)) break;
+      if (/api key|API_KEY|permission|401|403/i.test(lastErr)) break;
     }
   }
   throw new Error(lastErr || "connexion impossible");
 }
 function closeMessage(reason){
   if (/api key|API_KEY_INVALID|401|403|permission/i.test(reason)) return "La clé Google n’est pas acceptée. Vérifiez-la dans les réglages (roue dentée).";
-  if (/quota|429|RESOURCE_EXHAUSTED|rate/i.test(reason)) return "La limite gratuite du moment est atteinte. Réessayez un peu plus tard.";
+  if (/quota|429|RESOURCE_EXHAUSTED|rate|exceeded|limit/i.test(reason)) return QUOTA_MSG;
   if (/location|region|not supported in your country/i.test(reason)) return "Google refuse cette fonction depuis votre pays avec l’offre gratuite.";
   if (/délai dépassé : micro/.test(reason)) return "Le micro ne s’est pas ouvert. Fermez l’application (balayez-la vers le haut), rouvrez-la et réessayez ; vérifiez qu’aucune autre application n’utilise le micro.";
   if (/délai dépassé/.test(reason)) return "Google ne répond pas pour le moment (" + reason.replace("délai dépassé : ", "") + "). Vérifiez la connexion internet, puis réessayez dans une minute.";
@@ -838,7 +854,7 @@ function withTimeout(p, ms, what){ return Promise.race([p, new Promise((_, rej) 
 async function start(){
   const woke = withTimeout(audioCtx.resume(), 2000, "son").catch(() => {});
   if (!cfg.apiKey){ $("settings").showModal(); return; }
-  $("big").disabled = true; setPill("", "Connexion…");
+  $("big").disabled = true; $("stageMsg").hidden = true; setPill("", "Connexion…");
   try {
     await woke;
     if (head) await withTimeout(setupLips(), 8000, "avatar").catch(() => {});
@@ -936,6 +952,7 @@ renderTopics();
 fillSettings();
 loadAvatar();
 if (!cfg.apiKey) setTimeout(() => { if (!$("settings").open) { fillSettings(); $("settings").showModal(); } }, 600);
+if (cfg.quotaDay && cfg.quotaDay === googleDay()) showQuota();
 </script>
 </body>
 </html>
