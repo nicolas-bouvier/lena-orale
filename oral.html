@@ -207,6 +207,7 @@ a{color:var(--accent)}
       <span class="meta">À changer seulement si Selina ne répond pas.</span></div>
     <div class="field"><label for="level">Votre niveau</label>
       <select id="level"><option value="A1">A1 · débutant</option><option value="A2">A2 · élémentaire</option></select></div>
+    <label class="switch"><span><span class="lab">Selina traduit à voix haute</span><br><span class="meta">Après chaque réplique en allemand, elle redit l’essentiel en français. Utile au tout début ; à décocher dès que vous suivez.</span></span><input type="checkbox" id="frVoice"></label>
     <label class="switch"><span><span class="lab">Avec un casque ou des écouteurs</span><br><span class="meta">Vous pourrez couper la parole à Selina. Sans casque, laissez décoché : le micro se met en pause quand elle parle, pour qu’elle ne s’entende pas elle-même.</span></span><input type="checkbox" id="headset"></label>
     <div class="row"><button class="btn" value="ok">Enregistrer</button><button class="btn ghost" type="button" id="forgetKey">Oublier la clé</button></div>
     <p class="meta">Voix et conversation : Gemini Live (Google, offre gratuite). Avatar : modèle « brunette » de Ready Player Me (CC BY-NC 4.0), animé par TalkingHead et HeadAudio (logiciels libres, licence MIT). Pour un usage personnel uniquement.</p>
@@ -236,7 +237,7 @@ const TOPICS = [
 
 /* ---------- Réglages, gardés sur ce téléphone uniquement ---------- */
 const KEY = "lena-orale.v1";
-let cfg = {apiKey:"", name:"", voice:"Aoede", level:"A1", headset:false, topic:"libre", model:"auto", face:"images"};
+let cfg = {apiKey:"", name:"", voice:"Aoede", level:"A1", headset:false, topic:"libre", model:"auto", face:"images", frVoice:false};
 try { cfg = {...cfg, ...JSON.parse(localStorage.getItem(KEY) || "{}")}; } catch(e) {}
 const saveCfg = () => { try { localStorage.setItem(KEY, JSON.stringify(cfg)); } catch(e) {} };
 /* Ce que l'application sait déjà : prénom, niveau, traduction, ce que vous avez raconté à Selina */
@@ -447,6 +448,7 @@ How to speak:
 - When the learner makes a mistake, repeat their idea correctly in your answer, in a natural way, and add a very short tip only for important mistakes.
 - If the learner is stuck or speaks French, help briefly in French (one sentence), give them the German sentence to say, and invite them to repeat it.
 - The learner speaks German with a French accent, sometimes French. Never answer in Spanish or English.
+${cfg.frVoice ? "- The learner is a complete beginner and understands very little: after each of your turns in German, add a short French translation of what you just said, introduced by \"En français :\". Keep the German part short so the whole turn stays brief." : ""}
 - Start by greeting the learner warmly (Grüessech is fine as a Bernese hello), then start the topic.`;
 }
 function addMsg(who, text){
@@ -463,19 +465,35 @@ function appendTo(which, text){
   $("talk").scrollTop = $("talk").scrollHeight;
 }
 let textAi = null;
-async function translate(el){
-  const de = el.textContent.trim(); if (!de || !cfg.apiKey) return;
-  try {
-    textAi = textAi || new GoogleGenAI({ apiKey: cfg.apiKey });
-    const r = await textAi.models.generateContent({ model: "gemini-2.5-flash", contents: `Traduis en français naturel, sans commentaire ni guillemets : ${de}`, config: { thinkingConfig: { thinkingBudget: 0 } } });
-    const fr = (r.text || "").trim(); if (!fr) return;
-    const p = document.createElement("span"); p.className = "fr"; p.textContent = fr; p.hidden = !showFr;
-    el.appendChild(p);
-    const b = document.createElement("button"); b.className = "frbtn"; b.textContent = "FR"; b.setAttribute("aria-pressed", String(showFr));
-    b.onclick = () => { p.hidden = !p.hidden; b.setAttribute("aria-pressed", String(!p.hidden)); };
-    el.appendChild(b);
+/* La traduction en français : un bouton FR sous chaque phrase de Selina, toujours là ; plusieurs modèles gratuits essayés */
+const TEXT_MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash"];
+async function frText(de){
+  textAi = textAi || new GoogleGenAI({ apiKey: cfg.apiKey });
+  let last = "";
+  for (const model of TEXT_MODELS){
+    try {
+      const config = model.startsWith("gemini-2.5") ? { thinkingConfig: { thinkingBudget: 0 } } : {};
+      const r = await textAi.models.generateContent({ model, contents: `Traduis en français naturel, sans commentaire ni guillemets : ${de}`, config });
+      const fr = (r.text || "").trim(); if (fr) return fr;
+    } catch(e) { last = (e && e.message) || String(e); if (/API key|API_KEY|PERMISSION/i.test(last)) break; }
+  }
+  throw new Error(/429|RESOURCE_EXHAUSTED|quota/i.test(last) ? "limite gratuite du moment atteinte, retouchez FR dans un instant" : "traduction indisponible, retouchez FR pour réessayer");
+}
+function translate(el){
+  const de = el.textContent.trim(); if (!de) return;
+  const p = document.createElement("span"); p.className = "fr"; p.hidden = !showFr;
+  const b = document.createElement("button"); b.className = "frbtn"; b.textContent = "FR"; b.setAttribute("aria-pressed", String(showFr));
+  el.appendChild(p); el.appendChild(b);
+  let state = "idle";
+  const load = async () => {
+    if (state === "loading" || state === "done") return;
+    state = "loading"; p.textContent = "Traduction…";
+    try { p.textContent = await frText(de); state = "done"; }
+    catch(e) { p.textContent = "Pas de traduction : " + e.message + "."; state = "idle"; }
     $("talk").scrollTop = $("talk").scrollHeight;
-  } catch(e) {}
+  };
+  b.onclick = () => { if (p.hidden){ p.hidden = false; b.setAttribute("aria-pressed", "true"); load(); } else if (state !== "done"){ load(); } else { p.hidden = true; b.setAttribute("aria-pressed", "false"); } };
+  if (showFr) load();
 }
 function closeTurn(which){
   if (which !== "me" && curSelina){ curSelina.classList.remove("live"); curSelina.textContent = curSelina.textContent.replace(/ß/g, "ss").trim(); translate(curSelina); curSelina = null; }
@@ -745,12 +763,12 @@ $("big").addEventListener("click", () => live ? stop() : start());
 $("mute").addEventListener("click", () => { muted = !muted; $("mute").setAttribute("aria-pressed", String(muted)); setPill(muted ? "err" : "listening", muted ? "Micro coupé" : "Je vous écoute…"); });
 
 /* ---------- Réglages ---------- */
-function fillSettings(){ if (cfg.face !== "3d") cfg.face = "images"; $("face").value = cfg.face; $("field3d").hidden = $("face").value !== "3d"; $("fieldImg").hidden = $("face").value === "3d"; $("fieldSprite").hidden = $("face").value === "3d"; showImgState(); $("model").value = cfg.model || "auto"; $("apikey").value = cfg.apiKey; $("pname").value = cfg.name; $("voice").value = cfg.voice; $("level").value = cfg.level; $("headset").checked = cfg.headset; }
+function fillSettings(){ if (cfg.face !== "3d") cfg.face = "images"; $("face").value = cfg.face; $("field3d").hidden = $("face").value !== "3d"; $("fieldImg").hidden = $("face").value === "3d"; $("fieldSprite").hidden = $("face").value === "3d"; showImgState(); $("model").value = cfg.model || "auto"; $("apikey").value = cfg.apiKey; $("pname").value = cfg.name; $("voice").value = cfg.voice; $("level").value = cfg.level; $("headset").checked = cfg.headset; $("frVoice").checked = !!cfg.frVoice; }
 $("openSettings").addEventListener("click", () => { fillSettings(); $("settings").showModal(); });
 /* Chaque réglage s'enregistre dès qu'il est saisi (et avant le rechargement qui suit le choix d'un avatar) */
-function readSettings(){ const before = cfg.face; cfg.face = $("face").value; $("field3d").hidden = cfg.face !== "3d"; $("fieldImg").hidden = cfg.face === "3d"; $("fieldSprite").hidden = cfg.face === "3d"; cfg.model = $("model").value; cfg.apiKey = $("apikey").value.trim(); cfg.name = $("pname").value.trim(); cfg.voice = $("voice").value; cfg.level = $("level").value; cfg.headset = $("headset").checked; saveCfg(); if (before && before !== cfg.face) setTimeout(() => location.reload(), 300); }
+function readSettings(){ const before = cfg.face; cfg.face = $("face").value; $("field3d").hidden = cfg.face !== "3d"; $("fieldImg").hidden = cfg.face === "3d"; $("fieldSprite").hidden = cfg.face === "3d"; cfg.model = $("model").value; cfg.apiKey = $("apikey").value.trim(); cfg.name = $("pname").value.trim(); cfg.voice = $("voice").value; cfg.level = $("level").value; cfg.headset = $("headset").checked; cfg.frVoice = $("frVoice").checked; saveCfg(); if (before && before !== cfg.face) setTimeout(() => location.reload(), 300); }
 $("settingsForm").addEventListener("submit", readSettings);
-["apikey","pname","voice","level","headset","model","face"].forEach(id => { $(id).addEventListener("input", readSettings); $(id).addEventListener("change", readSettings); });
+["apikey","pname","voice","level","headset","model","face","frVoice"].forEach(id => { $(id).addEventListener("input", readSettings); $(id).addEventListener("change", readSettings); });
 $("avatarFile").addEventListener("change", async e => {
   readSettings();
   const f = e.target.files && e.target.files[0]; if (!f) return;
