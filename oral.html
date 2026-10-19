@@ -45,6 +45,9 @@ header h1{flex:1;margin-left:10px!important;font-family:var(--f-display);font-we
 header h1 em{color:var(--accent)}
 .ico{width:42px;height:42px;border-radius:50%;border:0;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;padding:0}
 .ico svg{width:20px;height:20px}
+header .tools{display:flex;gap:8px}
+.ico.frtog{font-weight:700;font-size:.8rem;letter-spacing:.04em;background:var(--sheet2);color:var(--muted)}
+.ico.frtog[aria-pressed="true"]{background:var(--gold-soft);color:var(--gold)}
 
 /* La scène de Selina */
 .stage{position:relative;flex:0 0 auto;height:min(46vh,430px);border-radius:28px;overflow:hidden;background:radial-gradient(120% 90% at 20% 0%,var(--stage1) 0%,var(--stage2) 70%)}
@@ -146,7 +149,8 @@ a{color:var(--accent)}
   <header>
     <a class="ico back" href="./" aria-label="Retour à l’application"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></a>
     <h1>Selina <em>à l'oral</em></h1>
-    <button class="ico" id="openSettings" aria-label="Réglages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+    <span class="tools"><button class="ico frtog" id="frToggle" aria-pressed="true" aria-label="Traduction en français">FR</button>
+    <button class="ico" id="openSettings" aria-label="Réglages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></span>
   </header>
 
   <section class="stage" aria-label="Selina">
@@ -210,7 +214,7 @@ a{color:var(--accent)}
     <label class="switch"><span><span class="lab">Selina traduit à voix haute</span><br><span class="meta">Après chaque réplique en allemand, elle redit l’essentiel en français. Utile au tout début ; à décocher dès que vous suivez.</span></span><input type="checkbox" id="frVoice"></label>
     <label class="switch"><span><span class="lab">Avec un casque ou des écouteurs</span><br><span class="meta">Vous pourrez couper la parole à Selina. Sans casque, laissez décoché : le micro se met en pause quand elle parle, pour qu’elle ne s’entende pas elle-même.</span></span><input type="checkbox" id="headset"></label>
     <div class="row"><button class="btn" value="ok">Enregistrer</button><button class="btn ghost" type="button" id="forgetKey">Oublier la clé</button></div>
-    <p class="meta">Version du 19 octobre · traduction FR. <button class="btn ghost" type="button" id="refresh">Mettre à jour l’application</button></p>
+    <p class="meta">Version du 19 octobre · 3 (bouton FR en haut). <button class="btn ghost" type="button" id="refresh">Mettre à jour l’application</button></p>
     <p class="meta">Voix et conversation : Gemini Live (Google, offre gratuite). Avatar : modèle « brunette » de Ready Player Me (CC BY-NC 4.0), animé par TalkingHead et HeadAudio (logiciels libres, licence MIT). Pour un usage personnel uniquement.</p>
   </form>
 </dialog>
@@ -245,7 +249,7 @@ const saveCfg = () => { try { localStorage.setItem(KEY, JSON.stringify(cfg)); } 
 let app = {}; try { app = JSON.parse(localStorage.getItem("deutsch-mit-lena.v1") || "{}"); } catch(e) {}
 if (!cfg.name && app.profile && app.profile.name) cfg.name = app.profile.name;
 if (app.settings && app.settings.level) cfg.level = app.settings.level;
-const showFr = !app.settings || app.settings.showFr !== false;
+let showFr = cfg.frShow !== false; /* traduction affichée d'office à l'oral ; le bouton FR en haut la coupe */
 const facts = (app.profile && app.profile.facts || []).slice(0, 12).join(" | ");
 
 const $ = id => document.getElementById(id);
@@ -769,6 +773,12 @@ $("openSettings").addEventListener("click", () => { fillSettings(); $("settings"
 /* Chaque réglage s'enregistre dès qu'il est saisi (et avant le rechargement qui suit le choix d'un avatar) */
 function readSettings(){ const before = cfg.face; cfg.face = $("face").value; $("field3d").hidden = cfg.face !== "3d"; $("fieldImg").hidden = cfg.face === "3d"; $("fieldSprite").hidden = cfg.face === "3d"; cfg.model = $("model").value; cfg.apiKey = $("apikey").value.trim(); cfg.name = $("pname").value.trim(); cfg.voice = $("voice").value; cfg.level = $("level").value; cfg.headset = $("headset").checked; cfg.frVoice = $("frVoice").checked; saveCfg(); if (before && before !== cfg.face) setTimeout(() => location.reload(), 300); }
 $("settingsForm").addEventListener("submit", readSettings);
+function paintFrToggle(){ $("frToggle").setAttribute("aria-pressed", String(showFr)); }
+paintFrToggle();
+$("frToggle").onclick = () => {
+  showFr = !showFr; cfg.frShow = showFr; saveCfg(); paintFrToggle();
+  document.querySelectorAll(".msg.lena").forEach(m => { const b = m.querySelector(".frbtn"), f = m.querySelector(".fr"); if (!b || !f) return; if (showFr === f.hidden) b.click(); });
+};
 $("refresh").onclick = () => { location.replace(location.pathname + "?v=" + Date.now()); };
 ["apikey","pname","voice","level","headset","model","face","frVoice"].forEach(id => { $(id).addEventListener("input", readSettings); $(id).addEventListener("change", readSettings); });
 $("avatarFile").addEventListener("change", async e => {
