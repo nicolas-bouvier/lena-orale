@@ -163,7 +163,7 @@ a{color:var(--accent)}
 @media (prefers-reduced-motion: reduce){ .pill i,.lena-art .eye,.lena-art .head,.lena-art .body{animation:none!important} }
 </style>
 <script>/* Mise à jour : si une version plus récente est en ligne, la page se recharge d'elle-même (au démarrage et au retour dans l'application) */
-(function(){ var B = "20261019103242";
+(function(){ var B = "20261019104234";
   function check(){ try { fetch("version.txt?t=" + Date.now(), { cache: "no-store" }).then(function(r){ return r.ok ? r.text() : ""; }).then(function(t){ t = (t || "").trim();
     if (!t || t === B) return; var k = "maj-" + t; try { if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, "1"); } catch(e) {}
     location.replace(location.pathname + "?v=" + t + location.hash); }).catch(function(){}); } catch(e) {} }
@@ -217,6 +217,7 @@ a{color:var(--accent)}
     <div class="field">
       <label for="apikey">Votre clé Google AI Studio (gratuite)</label>
       <input id="apikey" type="password" autocomplete="off" spellcheck="false" placeholder="Collez la clé ici">
+      <div class="row"><button class="btn ghost" type="button" id="testKey">Tester la clé</button><span class="meta" id="keyState"></span></div>
       <ol class="steps">
         <li>Ouvrez <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> avec votre compte Google.</li>
         <li>Touchez « Create API key » (« Créer une clé »), puis copiez-la.</li>
@@ -251,7 +252,7 @@ a{color:var(--accent)}
     <label class="switch"><span><span class="lab">Selina traduit à voix haute</span><br><span class="meta">Après chaque réplique en allemand, elle redit l’essentiel en français. Utile au tout début ; à décocher dès que vous suivez.</span></span><input type="checkbox" id="frVoice"></label>
     <label class="switch"><span><span class="lab">Avec un casque ou des écouteurs</span><br><span class="meta">Vous pourrez couper la parole à Selina. Sans casque, laissez décoché : le micro se met en pause quand elle parle, pour qu’elle ne s’entende pas elle-même.</span></span><input type="checkbox" id="headset"></label>
     <div class="row"><button class="btn" value="ok">Enregistrer</button><button class="btn ghost" type="button" id="forgetKey">Oublier la clé</button></div>
-    <p class="meta">Version du 19 octobre · 10. <button class="btn ghost" type="button" id="refresh">Mettre à jour l’application</button></p>
+    <p class="meta">Version du 19 octobre · 11. <button class="btn ghost" type="button" id="refresh">Mettre à jour l’application</button></p>
     <p class="meta">Voix et conversation : Gemini Live (Google, offre gratuite). Avatar : modèle « brunette » de Ready Player Me (CC BY-NC 4.0), animé par TalkingHead et HeadAudio (logiciels libres, licence MIT). Pour un usage personnel uniquement.</p>
   </form>
 </dialog>
@@ -817,7 +818,8 @@ async function connect(){
   throw new Error(lastErr || "connexion impossible");
 }
 function closeMessage(reason){
-  if (/api key|API_KEY_INVALID|401|403|permission/i.test(reason)) return "La clé Google n’est pas acceptée. Vérifiez-la dans les réglages (roue dentée).";
+  if (/leaked/i.test(reason)) return "Google a désactivé cette clé (il la croit divulguée). Créez-en une nouvelle sur aistudio.google.com/apikey et collez-la dans les réglages (roue dentée).";
+  if (/api key|API_KEY_INVALID|401|403|permission/i.test(reason)) return "Google refuse la clé. Sa réponse : « " + reason + " ». Dans les réglages (roue dentée), touchez « Tester la clé ».";
   if (/quota|429|RESOURCE_EXHAUSTED|rate|exceeded|limit/i.test(reason)) return QUOTA_MSG;
   if (/location|region|not supported in your country/i.test(reason)) return "Google refuse cette fonction depuis votre pays avec l’offre gratuite.";
   if (/délai dépassé : micro/.test(reason)) return "Le micro ne s’est pas ouvert. Fermez l’application (balayez-la vers le haut), rouvrez-la et réessayez ; vérifiez qu’aucune autre application n’utilise le micro.";
@@ -922,6 +924,18 @@ paintFrToggle();
 $("frToggle").onclick = () => {
   showFr = !showFr; cfg.frShow = showFr; saveCfg(); paintFrToggle();
   document.querySelectorAll(".msg.lena").forEach(m => { const b = m.querySelector(".frbtn"), f = m.querySelector(".fr"); if (!b || !f) return; if (showFr === f.hidden) b.click(); });
+};
+/* Tester la clé : une petite question à Google, sans conversation */
+$("testKey").onclick = async () => {
+  const k = $("apikey").value.trim(), out = $("keyState");
+  if (!k){ out.textContent = "Aucune clé collée."; return; }
+  out.textContent = "Test en cours…";
+  try {
+    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=50", { headers: { "x-goog-api-key": k } });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok){ const live = (j.models || []).some(m => /native-audio|live/i.test(m.name)); out.textContent = "Clé acceptée par Google" + (live ? ", voix disponible." : " (voix non listée)."); }
+    else out.textContent = "Clé refusée : " + ((j.error && (j.error.message || j.error.status)) || ("erreur " + r.status));
+  } catch(e) { out.textContent = "Pas de réponse de Google (connexion internet ?)."; }
 };
 $("refresh").onclick = () => { location.replace(location.pathname + "?v=" + Date.now()); };
 ["apikey","pname","voice","level","headset","model","face","frVoice"].forEach(id => { $(id).addEventListener("input", readSettings); $(id).addEventListener("change", readSettings); });
