@@ -93,8 +93,10 @@ header .tools{display:flex;gap:8px}
 .msg.live{opacity:.75}
 .msg .fr{display:block;margin-top:6px;font-size:.88rem;color:var(--muted)}
 .msg .fr[hidden]{display:none}
-.msg .frbtn{display:inline-block;margin-top:6px;border:0;border-radius:999px;padding:2px 10px;font-size:.72rem;font-weight:700;background:var(--sheet2);color:var(--muted)}
+.msg .frbtn{display:inline-block;margin-top:6px;border:0;border-radius:999px;padding:4px 12px;min-height:28px;font-size:.72rem;font-weight:700;background:var(--sheet2);color:var(--muted)}
 .msg .frbtn[aria-pressed="true"]{background:var(--gold-soft);color:var(--gold)}
+.msg .frbtn.replay{margin-left:6px;display:inline-flex;align-items:center;gap:4px;padding:4px 12px;min-height:28px}
+.msg .frbtn.replay svg{width:12px;height:12px}
 .hint{color:var(--muted);font-size:.92rem;text-align:center;padding:6px 10px}
 .notice{background:var(--bad-soft);color:var(--ink);border-radius:14px;padding:10px 14px;font-size:.92rem}
 
@@ -158,7 +160,7 @@ a{color:var(--accent)}
 @media (prefers-reduced-motion: reduce){ .pill i,.lena-art .eye,.lena-art .head,.lena-art .body{animation:none!important} }
 </style>
 <script>/* Mise à jour : si une version plus récente est en ligne, la page se recharge d'elle-même (au démarrage et au retour dans l'application) */
-(function(){ var B = "20261019095740";
+(function(){ var B = "20261019100237";
   function check(){ try { fetch("version.txt?t=" + Date.now(), { cache: "no-store" }).then(function(r){ return r.ok ? r.text() : ""; }).then(function(t){ t = (t || "").trim();
     if (!t || t === B) return; var k = "maj-" + t; try { if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, "1"); } catch(e) {}
     location.replace(location.pathname + "?v=" + t + location.hash); }).catch(function(){}); } catch(e) {} }
@@ -245,7 +247,7 @@ a{color:var(--accent)}
     <label class="switch"><span><span class="lab">Selina traduit à voix haute</span><br><span class="meta">Après chaque réplique en allemand, elle redit l’essentiel en français. Utile au tout début ; à décocher dès que vous suivez.</span></span><input type="checkbox" id="frVoice"></label>
     <label class="switch"><span><span class="lab">Avec un casque ou des écouteurs</span><br><span class="meta">Vous pourrez couper la parole à Selina. Sans casque, laissez décoché : le micro se met en pause quand elle parle, pour qu’elle ne s’entende pas elle-même.</span></span><input type="checkbox" id="headset"></label>
     <div class="row"><button class="btn" value="ok">Enregistrer</button><button class="btn ghost" type="button" id="forgetKey">Oublier la clé</button></div>
-    <p class="meta">Version du 19 octobre · 6 (réponses proposées). <button class="btn ghost" type="button" id="refresh">Mettre à jour l’application</button></p>
+    <p class="meta">Version du 19 octobre · 7 (réécouter). <button class="btn ghost" type="button" id="refresh">Mettre à jour l’application</button></p>
     <p class="meta">Voix et conversation : Gemini Live (Google, offre gratuite). Avatar : modèle « brunette » de Ready Player Me (CC BY-NC 4.0), animé par TalkingHead et HeadAudio (logiciels libres, licence MIT). Pour un usage personnel uniquement.</p>
   </form>
 </dialog>
@@ -463,7 +465,7 @@ async function setupLips(){
 let speakUntil = 0, chunks = 0, model = "", lastModel = "", lastMsg = "";
 let connecting = false, live = false, session = null, mic = null, muted = false, lenaSpeaking = false, startedAt = 0, tick = null, wakeLock = null;
 const DIAG = /[?&]diag/.test(location.search);
-let curSelina = null, curMe = null, lenaIdle = 0;
+let curSelina = null, curMe = null, lenaIdle = 0, turnPcm = [];
 
 function diag(extra){
   $("diag").hidden = !live || !(DIAG || extra); /* bandeau technique : seulement en cas de souci, ou avec ?diag dans l adresse */
@@ -553,8 +555,27 @@ function translate(el){
   if (showFr) load();
 }
 function closeTurn(which){
-  if (which !== "me" && curSelina){ curSelina.classList.remove("live"); curSelina.textContent = curSelina.textContent.replace(/ß/g, "ss").trim(); translate(curSelina); suggest(curSelina.firstChild ? curSelina.firstChild.textContent : ""); curSelina = null; }
+  if (which !== "me" && curSelina){ curSelina.classList.remove("live"); curSelina.textContent = curSelina.textContent.replace(/ß/g, "ss").trim(); translate(curSelina); attachReplay(curSelina, turnPcm); turnPcm = []; suggest(curSelina.firstChild ? curSelina.firstChild.textContent : ""); curSelina = null; }
   if (which !== "lena" && curMe){ curMe.classList.remove("live"); curMe.textContent = curMe.textContent.trim(); curMe = null; }
+}
+/* Réécouter : la voix de Selina est gardée avec chaque réplique, le temps de la séance */
+function attachReplay(el, pcm){
+  if (!pcm || !pcm.length) return;
+  const text = el.firstChild ? el.firstChild.textContent : "";
+  const b = document.createElement("button"); b.type = "button"; b.className = "frbtn replay"; b.setAttribute("aria-label", "Réécouter Selina");
+  b.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>Réécouter`;
+  b.onclick = () => replay(pcm, text);
+  el.appendChild(b);
+}
+function replay(pcm, text){
+  try { audioCtx.resume(); } catch(e) {}
+  if (head && avatarReady){ try { head.streamInterrupt(); } catch(e) {} }
+  stopVoice();
+  let dur = 0; for (const buf of pcm){ dur += buf.byteLength / 2 / 24000 * 1000; }
+  speakUntil = Date.now() + dur; lenaSpeaking = true; vText = (text || "").toLowerCase(); vPos = 0; thinkingSince = 0;
+  setPill("speaking", "Selina répète…");
+  for (const buf of pcm) playFallback(buf);
+  setTimeout(() => { if (!live && Date.now() >= speakUntil){ lenaSpeaking = false; setPill("", "Prête à parler"); } }, dur + 300);
 }
 /* Des réponses toutes simples à dire, proposées après chaque réplique de Selina */
 const HELP = [["Wie bitte?", "Pardon ?"], ["Langsamer, bitte.", "Plus lentement, s’il te plaît."], ["Ich verstehe nicht.", "Je ne comprends pas."], ["Noch einmal, bitte.", "Encore une fois, s’il te plaît."]];
@@ -628,7 +649,7 @@ function onMessage(msg){
       const buf = unb64(p.inlineData.data);
       const dur = buf.byteLength / 2 / 24000 * 1000;
       speakUntil = Math.max(speakUntil, Date.now()) + dur;
-      chunks++; diag();
+      chunks++; diag(); turnPcm.push(buf);
       if (audioCtx.state !== "running") askForSound();
       if (head && avatarReady) head.streamAudio({ audio: buf });
       else playFallback(buf);
@@ -822,7 +843,7 @@ async function start(){
     }
     mic = await startMic();
     if (!(await wakeAudio())) askForSound();
-    live = true; connecting = true; chunks = 0; speakUntil = 0; diag();
+    live = true; connecting = true; chunks = 0; speakUntil = 0; turnPcm = []; diag();
     session = await connect();
     connecting = false;
     try { wakeLock = await navigator.wakeLock?.request("screen"); } catch(e) {}
