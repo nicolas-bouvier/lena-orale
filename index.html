@@ -244,6 +244,16 @@ svg.i{width:22px;height:22px;flex:none}
 .lena.face[data-state="thinking"] .dots{opacity:1}
 @media (prefers-reduced-motion: reduce){ .lena.face .f-blink,.lena.face .f-talk{animation:none!important} }
 
+/* Selina en planche (12 expressions dans une image) : le médaillon */
+.lena.face.sheet .l{position:absolute;inset:-12% -12% -12% -12%;background-image:var(--sheet);background-size:400% 300%;background-repeat:no-repeat;transform:translateY(8%)}
+.lena.face.sheet .mouth,.lena.face.sheet .eyes{opacity:0}
+.lena.face.sheet .mouth{-webkit-mask-image:radial-gradient(ellipse 15% 10.5% at 48.8% 50%,#000 55%,transparent 100%);mask-image:radial-gradient(ellipse 15% 10.5% at 48.8% 50%,#000 55%,transparent 100%)}
+.lena.face.sheet .eyes{-webkit-mask-image:radial-gradient(ellipse 25% 10% at 52% 31%,#000 60%,transparent 100%);mask-image:radial-gradient(ellipse 25% 10% at 52% 31%,#000 60%,transparent 100%);animation:faceblink 5.2s infinite}
+.lena.face.sheet[data-state="speaking"] .m1{animation:sheetA .52s infinite ease-in-out}
+.lena.face.sheet[data-state="speaking"] .m2{animation:sheetB .52s infinite ease-in-out}
+@keyframes sheetA{0%,100%{opacity:.9}50%{opacity:.1}}
+@keyframes sheetB{0%,100%{opacity:0}35%,65%{opacity:.85}}
+
 /* Séance */
 .session{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;background:var(--paper);padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 .s-top{display:grid;grid-template-columns:40px 1fr auto;gap:10px;align-items:center;padding:8px 16px 6px}
@@ -1287,8 +1297,14 @@ function drawnSVG(){
 </svg>`;
 }
 /* Le visage de Selina : les images chargées dans les Réglages (sourire, bouche entrouverte, yeux fermés), sinon le dessin */
-let faceUrls = null;
+let faceUrls = null, faceSheet = null;
 function lenaSVG(){
+  if (faceSheet){
+    const pos = i => `${(i % 4) * 100 / 3}% ${Math.floor(i / 4) * 50}%`;
+    return `<div class="lena face sheet" data-state="idle" role="img" aria-label="Selina, votre professeure d’allemand" style="--sheet:url('${faceSheet}')">
+      <div class="l" style="background-position:${pos(0)}"></div><div class="l mouth m1" style="background-position:${pos(1)}"></div><div class="l mouth m2" style="background-position:${pos(2)}"></div><div class="l eyes" style="background-position:${pos(10)}"></div>
+      <span class="dots"><i></i><i></i><i></i></span></div>`;
+  }
   if (!faceUrls) return drawnSVG();
   return `<div class="lena face" data-state="idle" role="img" aria-label="Selina, votre professeure d’allemand">
     <img class="f-smile" src="${faceUrls.smile}" alt=""><img class="f-talk" src="${faceUrls.talk}" alt=""><img class="f-blink" src="${faceUrls.blink}" alt="">
@@ -2437,6 +2453,7 @@ renderHome();
     r.onsuccess = () => {
       const db = r.result; if (!db.objectStoreNames.contains("files")) return;
       const st = db.transaction("files").objectStore("files"), got = {};
+      const qs = st.get("face_sprite"); qs.onsuccess = () => { if (qs.result){ faceSheet = URL.createObjectURL(qs.result); if (!sess && !drill) renderHome(); } };
       let n = 0;
       ["smile","talk","blink"].forEach(k => { const q = st.get("face_" + k); q.onsuccess = () => { if (q.result) got[k] = URL.createObjectURL(q.result); if (++n === 3 && got.smile && got.talk && got.blink){ faceUrls = got; if (!sess && !drill) renderHome(); } }; });
     };

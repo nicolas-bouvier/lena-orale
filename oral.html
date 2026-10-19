@@ -52,6 +52,11 @@ header h1 em{color:var(--accent)}
 #avatar canvas{display:block}
 .stage.light{background:#FFFFFF}
 #avatar .face{position:absolute;inset:-3%;transform-origin:50% 85%;will-change:transform}
+#avatar .face.sprite{inset:auto;top:0;left:50%;height:104%;aspect-ratio:1/1}
+#avatar .face.sprite .l{position:absolute;inset:0;background-image:var(--sheet);background-size:400% 300%;background-repeat:no-repeat}
+#avatar .face.sprite .l[data-k]{opacity:0;will-change:opacity}
+#avatar .face.sprite .mouth{-webkit-mask-image:radial-gradient(ellipse 15% 10.5% at 48.8% 50%,#000 55%,transparent 100%);mask-image:radial-gradient(ellipse 15% 10.5% at 48.8% 50%,#000 55%,transparent 100%)}
+#avatar .face.sprite .eyes{-webkit-mask-image:radial-gradient(ellipse 25% 10% at 52% 31%,#000 60%,transparent 100%);mask-image:radial-gradient(ellipse 25% 10% at 52% 31%,#000 60%,transparent 100%)}
 #avatar .face img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 18%}
 #avatar .face .f-talk,#avatar .face .f-blink{opacity:0;will-change:opacity}
 #avatar .face[data-frame="talk"] .f-talk{opacity:1}
@@ -179,7 +184,10 @@ a{color:var(--accent)}
     </div>
     <div class="field"><label for="face">Le visage de Selina</label>
       <select id="face"><option value="images">Images de Selina (recommandé)</option><option value="3d">Personnage 3D</option></select></div>
-    <div class="field" id="fieldImg"><span class="lab">Les images de Selina</span>
+    <div class="field" id="fieldSprite"><span class="lab">Le visage de Selina (1 fichier)</span>
+      <span class="meta" id="spriteState">La planche « selina-visage.jpg » : 12 expressions dans une seule image. Elle reste dans ce téléphone.</span>
+      <div class="row"><label class="btn ghost" for="fSprite" style="cursor:pointer">Charger la planche</label><input id="fSprite" type="file" accept="image/*" hidden></div></div>
+    <div class="field" id="fieldImg"><span class="lab">Ou trois images séparées</span>
       <span class="meta" id="imgState">Chargez les trois images créées avec ChatGPT. Elles restent dans ce téléphone.</span>
       <div class="row">
         <label class="btn ghost" for="fSmile" style="cursor:pointer">1. Sourire</label><input id="fSmile" type="file" accept="image/*" hidden data-k="smile">
@@ -274,6 +282,20 @@ async function showImgState(){ const f = await faceFiles(); const n = Object.key
 async function loadAvatar(){
   if (cfg.face !== "3d"){
     head = null; avatarReady = false;
+    let sheet = null; try { sheet = await idb.get("face_sprite"); } catch(e) {}
+    if (sheet){
+      const url = URL.createObjectURL(sheet);
+      const pos = k => { const i = SPRITE.indexOf(k); return `${(i % 4) * 100 / 3}% ${Math.floor(i / 4) * 50}%`; };
+      $("avatar").innerHTML = `<div class="face sprite" style="--sheet:url('${url}')"><div class="l" style="background-position:${pos("rest")}"></div>`
+        + MOUTHS.map(k => `<div class="l mouth" data-k="${k}" style="background-position:${pos(k)}"></div>`).join("")
+        + EYES.map(k => `<div class="l eyes" data-k="${k}" style="background-position:${pos(k)}"></div>`).join("") + `</div>`;
+      drawn = $("avatar").querySelector(".face"); spriteMode = true;
+      layers = {}; drawn.querySelectorAll(".l[data-k]").forEach(el => { layers[el.dataset.k] = { el, v: 0 }; });
+      document.querySelector(".stage").classList.add("light");
+      $("loading").hidden = true;
+      requestAnimationFrame(mouthLoop);
+      return;
+    }
     const f = await faceFiles();
     if (f.smile && f.talk && f.blink){
       const u = k => URL.createObjectURL(f[k]);
@@ -434,6 +456,8 @@ function addMsg(who, text){
 }
 function appendTo(which, text){
   if (!text) return;
+  if (which === "selina" || which === "lena"){ if (!curSelina){ vText = ""; vPos = 0; } vText += text.toLowerCase(); thinkingSince = 0; }
+  else thinkingSince = performance.now();
   if (which === "lena"){ if (!curSelina) curSelina = addMsg("lena", ""); curSelina.textContent += text; }
   else { if (!curMe) curMe = addMsg("me", ""); curMe.textContent += text; }
   $("talk").scrollTop = $("talk").scrollHeight;
@@ -501,6 +525,48 @@ function voiceOut(){
   return out;
 }
 let mLevel = 0, mPhase = 0, mLast = 0, nextBlink = 0, blinkUntil = 0, mOpen = 0, mBlink = 0, mSway = 0, faceImgs = null;
+/* La planche : 4 colonnes × 3 lignes, dans cet ordre */
+const SPRITE = ["rest","slight","a","e","i","o","u","ue","m","l","blink","look"];
+const MOUTHS = ["slight","a","e","i","o","u","ue","m","l"], EYES = ["blink","look"];
+let spriteMode = false, layers = {}, vText = "", vPos = 0, thinkingSince = 0, lookUntil = 0, nextLook = 0;
+/* De la lettre prononcée à la forme de la bouche */
+function viseme(t, i){
+  const c = t[i] || "", n2 = t.slice(i, i + 3);
+  if (n2 === "sch" || t.slice(i, i + 2) === "ch") return "ue";
+  if ("aä".includes(c)) return "a";
+  if ("eé".includes(c)) return "e";
+  if ("iy".includes(c)) return "i";
+  if (c === "o") return "o";
+  if (c === "u") return "u";
+  if ("öü".includes(c)) return "ue";
+  if ("mbp".includes(c)) return "m";
+  if ("lntd".includes(c)) return "l";
+  if ("szßcjx".includes(c)) return "i";
+  if ("fvw".includes(c)) return "e";
+  return "slight";
+}
+function spriteTick(t, dt, talking){
+  /* avance dans le texte au rythme de la parole (environ 13 lettres par seconde) */
+  let want = null;
+  if (talking){
+    vPos += dt / 1000 * 13;
+    let i = Math.floor(vPos); while (i < vText.length && !/[a-zäöüß]/.test(vText[i])) i++;
+    want = i < vText.length ? viseme(vText, i) : ["slight","a","e","o","i"][Math.floor(t / 140) % 5];
+    if (mLevel < 0.12 && (want === "a" || want === "o")) want = "slight";
+  }
+  /* yeux : clignement, et regard de côté quand elle réfléchit (ou de temps en temps) */
+  if (!nextBlink) nextBlink = t + 2500 + Math.random() * 3500;
+  if (t > nextBlink){ blinkUntil = t + 160; nextBlink = t + 2500 + Math.random() * 3500; }
+  if (!nextLook) nextLook = t + 9000 + Math.random() * 9000;
+  if (!talking && t > nextLook){ lookUntil = t + 1200; nextLook = t + 9000 + Math.random() * 9000; }
+  const thinking = thinkingSince && t - thinkingSince > 900 && !talking;
+  const eyes = t < blinkUntil ? "blink" : (thinking || t < lookUntil) ? "look" : null;
+  for (const k in layers){
+    const L = layers[k], target = (k === want || k === eyes) ? 1 : 0;
+    L.v += (target - L.v) * Math.min(1, dt / (EYES.includes(k) ? 45 : 55));
+    L.el.style.opacity = L.v.toFixed(3);
+  }
+}
 /* L'animation suit l'affichage ; si le téléphone le ralentit, une minuterie prend le relais */
 setInterval(() => { if (drawn && performance.now() - mLast > 200) mouthTick(performance.now()); }, 60);
 function mouthLoop(t){
@@ -515,6 +581,15 @@ function mouthTick(t){
   mLevel += (target - mLevel) * Math.min(1, dt / 40);
   const talking = mLevel > 0.03;
   mPhase += dt / 1000 * 2 * Math.PI * 2.6;
+  if (spriteMode){
+    spriteTick(t, dt, talking);
+    const s1 = t / 1000;
+    mSway += ((talking ? 1 : 0) - mSway) * Math.min(1, dt / 400);
+    const rot = Math.sin(s1 * 0.7) * 0.35 + mSway * Math.sin(s1 * 2.1) * 0.6;
+    const dy = Math.sin(s1 * 1.6) * 1.2 + mSway * Math.sin(s1 * 3.3) * 0.8;
+    drawn.style.transform = `translateX(-50%) translateY(${dy.toFixed(2)}px) rotate(${rot.toFixed(3)}deg) scale(${(1 + Math.sin(s1 * 1.6) * 0.003).toFixed(4)})`;
+    return;
+  }
   /* La bouche : un fondu entre le sourire et la bouche ouverte, selon le volume, avec le rythme des syllabes */
   const want = talking ? Math.min(1, mLevel * 1.35) * (0.5 + 0.5 * Math.abs(Math.sin(mPhase))) : 0;
   mOpen += (want - mOpen) * Math.min(1, dt / 55);
@@ -670,10 +745,10 @@ $("big").addEventListener("click", () => live ? stop() : start());
 $("mute").addEventListener("click", () => { muted = !muted; $("mute").setAttribute("aria-pressed", String(muted)); setPill(muted ? "err" : "listening", muted ? "Micro coupé" : "Je vous écoute…"); });
 
 /* ---------- Réglages ---------- */
-function fillSettings(){ if (cfg.face !== "3d") cfg.face = "images"; $("face").value = cfg.face; $("field3d").hidden = $("face").value !== "3d"; $("fieldImg").hidden = $("face").value === "3d"; showImgState(); $("model").value = cfg.model || "auto"; $("apikey").value = cfg.apiKey; $("pname").value = cfg.name; $("voice").value = cfg.voice; $("level").value = cfg.level; $("headset").checked = cfg.headset; }
+function fillSettings(){ if (cfg.face !== "3d") cfg.face = "images"; $("face").value = cfg.face; $("field3d").hidden = $("face").value !== "3d"; $("fieldImg").hidden = $("face").value === "3d"; $("fieldSprite").hidden = $("face").value === "3d"; showImgState(); $("model").value = cfg.model || "auto"; $("apikey").value = cfg.apiKey; $("pname").value = cfg.name; $("voice").value = cfg.voice; $("level").value = cfg.level; $("headset").checked = cfg.headset; }
 $("openSettings").addEventListener("click", () => { fillSettings(); $("settings").showModal(); });
 /* Chaque réglage s'enregistre dès qu'il est saisi (et avant le rechargement qui suit le choix d'un avatar) */
-function readSettings(){ const before = cfg.face; cfg.face = $("face").value; $("field3d").hidden = cfg.face !== "3d"; $("fieldImg").hidden = cfg.face === "3d"; cfg.model = $("model").value; cfg.apiKey = $("apikey").value.trim(); cfg.name = $("pname").value.trim(); cfg.voice = $("voice").value; cfg.level = $("level").value; cfg.headset = $("headset").checked; saveCfg(); if (before && before !== cfg.face) setTimeout(() => location.reload(), 300); }
+function readSettings(){ const before = cfg.face; cfg.face = $("face").value; $("field3d").hidden = cfg.face !== "3d"; $("fieldImg").hidden = cfg.face === "3d"; $("fieldSprite").hidden = cfg.face === "3d"; cfg.model = $("model").value; cfg.apiKey = $("apikey").value.trim(); cfg.name = $("pname").value.trim(); cfg.voice = $("voice").value; cfg.level = $("level").value; cfg.headset = $("headset").checked; saveCfg(); if (before && before !== cfg.face) setTimeout(() => location.reload(), 300); }
 $("settingsForm").addEventListener("submit", readSettings);
 ["apikey","pname","voice","level","headset","model","face"].forEach(id => { $(id).addEventListener("input", readSettings); $(id).addEventListener("change", readSettings); });
 $("avatarFile").addEventListener("change", async e => {
@@ -683,6 +758,11 @@ $("avatarFile").addEventListener("change", async e => {
   if (String.fromCharCode(...head4) !== "glTF"){ $("avatarState").textContent = "Ce fichier n’est pas un avatar .glb. Exportez-le depuis Avaturn au format GLB."; return; }
   try { await idb.set("avatar", f); $("avatarState").textContent = "Avatar enregistré. Selina va se recharger…"; setTimeout(() => location.reload(), 700); }
   catch(err) { $("avatarState").textContent = "Impossible d’enregistrer l’avatar sur ce téléphone (" + (err && err.message || "stockage refusé") + ")."; }
+});
+$("fSprite").addEventListener("change", async e => {
+  const f = e.target.files && e.target.files[0]; if (!f) return;
+  try { await idb.set("face_sprite", f); readSettings(); cfg.face = "images"; saveCfg(); $("spriteState").textContent = "Planche chargée. Selina arrive…"; setTimeout(() => location.reload(), 700); }
+  catch(err) { $("spriteState").textContent = "Impossible d’enregistrer la planche (" + (err && err.message || "stockage refusé") + ")."; }
 });
 ["fSmile","fTalk","fBlink"].forEach(id => $(id).addEventListener("change", async e => {
   const f = e.target.files && e.target.files[0]; if (!f) return;
