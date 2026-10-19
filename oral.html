@@ -214,7 +214,7 @@ a{color:var(--accent)}
     <label class="switch"><span><span class="lab">Selina traduit à voix haute</span><br><span class="meta">Après chaque réplique en allemand, elle redit l’essentiel en français. Utile au tout début ; à décocher dès que vous suivez.</span></span><input type="checkbox" id="frVoice"></label>
     <label class="switch"><span><span class="lab">Avec un casque ou des écouteurs</span><br><span class="meta">Vous pourrez couper la parole à Selina. Sans casque, laissez décoché : le micro se met en pause quand elle parle, pour qu’elle ne s’entende pas elle-même.</span></span><input type="checkbox" id="headset"></label>
     <div class="row"><button class="btn" value="ok">Enregistrer</button><button class="btn ghost" type="button" id="forgetKey">Oublier la clé</button></div>
-    <p class="meta">Version du 19 octobre · 3 (bouton FR en haut). <button class="btn ghost" type="button" id="refresh">Mettre à jour l’application</button></p>
+    <p class="meta">Version du 19 octobre · 4 (traduction MyMemory). <button class="btn ghost" type="button" id="refresh">Mettre à jour l’application</button></p>
     <p class="meta">Voix et conversation : Gemini Live (Google, offre gratuite). Avatar : modèle « brunette » de Ready Player Me (CC BY-NC 4.0), animé par TalkingHead et HeadAudio (logiciels libres, licence MIT). Pour un usage personnel uniquement.</p>
   </form>
 </dialog>
@@ -472,17 +472,36 @@ function appendTo(which, text){
 let textAi = null;
 /* La traduction en français : un bouton FR sous chaque phrase de Selina, toujours là ; plusieurs modèles gratuits essayés */
 const TEXT_MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash"];
-async function frText(de){
-  textAi = textAi || new GoogleGenAI({ apiKey: cfg.apiKey });
-  let last = "";
-  for (const model of TEXT_MODELS){
-    try {
-      const config = model.startsWith("gemini-2.5") ? { thinkingConfig: { thinkingBudget: 0 } } : {};
-      const r = await textAi.models.generateContent({ model, contents: `Traduis en français naturel, sans commentaire ni guillemets : ${de}`, config });
-      const fr = (r.text || "").trim(); if (fr) return fr;
-    } catch(e) { last = (e && e.message) || String(e); if (/API key|API_KEY|PERMISSION/i.test(last)) break; }
+/* 1) MyMemory : service de traduction gratuit, sans clé ; 2) sinon Gemini avec la clé */
+async function memoryFr(de){
+  const parts = de.match(/[^.!?]+[.!?]*\s*/g) || [de], out = [];
+  let chunk = "";
+  for (const p of parts){ if ((chunk + p).length > 450 && chunk){ out.push(chunk); chunk = ""; } chunk += p; }
+  if (chunk) out.push(chunk);
+  const fr = [];
+  for (const q of out){
+    const r = await fetch("https://api.mymemory.translated.net/get?langpair=de|fr&q=" + encodeURIComponent(q.trim()));
+    const j = await r.json();
+    const t = j && j.responseData && j.responseData.translatedText;
+    if (!r.ok || !t || j.quotaFinished || /MYMEMORY WARNING|QUERY LENGTH/i.test(t)) throw new Error("MyMemory " + (j && j.responseStatus));
+    fr.push(t);
   }
-  throw new Error(/429|RESOURCE_EXHAUSTED|quota/i.test(last) ? "limite gratuite du moment atteinte, retouchez FR dans un instant" : "traduction indisponible, retouchez FR pour réessayer");
+  return fr.join(" ").replace(/&#39;/g, "’").replace(/&quot;/g, "\"").replace(/&amp;/g, "&").trim();
+}
+async function frText(de){
+  let last = "";
+  try { const fr = await memoryFr(de); if (fr) return fr; } catch(e) { last = (e && e.message) || String(e); }
+  if (cfg.apiKey){
+    textAi = textAi || new GoogleGenAI({ apiKey: cfg.apiKey });
+    for (const model of TEXT_MODELS){
+      try {
+        const config = model.startsWith("gemini-2.5") ? { thinkingConfig: { thinkingBudget: 0 } } : {};
+        const r = await textAi.models.generateContent({ model, contents: `Traduis en français naturel, sans commentaire ni guillemets : ${de}`, config });
+        const fr = (r.text || "").trim(); if (fr) return fr;
+      } catch(e) { last = (e && e.message) || String(e); }
+    }
+  }
+  throw new Error("traduction indisponible (" + last.slice(0, 80) + "), retouchez FR pour réessayer");
 }
 function translate(el){
   const de = el.textContent.trim(); if (!de) return;
