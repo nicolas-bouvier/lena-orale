@@ -160,7 +160,7 @@ a{color:var(--accent)}
 @media (prefers-reduced-motion: reduce){ .pill i,.lena-art .eye,.lena-art .head,.lena-art .body{animation:none!important} }
 </style>
 <script>/* Mise à jour : si une version plus récente est en ligne, la page se recharge d'elle-même (au démarrage et au retour dans l'application) */
-(function(){ var B = "20261019100237";
+(function(){ var B = "20261019101927";
   function check(){ try { fetch("version.txt?t=" + Date.now(), { cache: "no-store" }).then(function(r){ return r.ok ? r.text() : ""; }).then(function(t){ t = (t || "").trim();
     if (!t || t === B) return; var k = "maj-" + t; try { if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, "1"); } catch(e) {}
     location.replace(location.pathname + "?v=" + t + location.hash); }).catch(function(){}); } catch(e) {} }
@@ -247,7 +247,7 @@ a{color:var(--accent)}
     <label class="switch"><span><span class="lab">Selina traduit à voix haute</span><br><span class="meta">Après chaque réplique en allemand, elle redit l’essentiel en français. Utile au tout début ; à décocher dès que vous suivez.</span></span><input type="checkbox" id="frVoice"></label>
     <label class="switch"><span><span class="lab">Avec un casque ou des écouteurs</span><br><span class="meta">Vous pourrez couper la parole à Selina. Sans casque, laissez décoché : le micro se met en pause quand elle parle, pour qu’elle ne s’entende pas elle-même.</span></span><input type="checkbox" id="headset"></label>
     <div class="row"><button class="btn" value="ok">Enregistrer</button><button class="btn ghost" type="button" id="forgetKey">Oublier la clé</button></div>
-    <p class="meta">Version du 19 octobre · 7 (réécouter). <button class="btn ghost" type="button" id="refresh">Mettre à jour l’application</button></p>
+    <p class="meta">Version du 19 octobre · 8. <button class="btn ghost" type="button" id="refresh">Mettre à jour l’application</button></p>
     <p class="meta">Voix et conversation : Gemini Live (Google, offre gratuite). Avatar : modèle « brunette » de Ready Player Me (CC BY-NC 4.0), animé par TalkingHead et HeadAudio (logiciels libres, licence MIT). Pour un usage personnel uniquement.</p>
   </form>
 </dialog>
@@ -309,7 +309,7 @@ const idb = {
 /* ---------- Un seul circuit audio : la voix de Selina et le micro ---------- */
 const AC = window.AudioContext || window.webkitAudioContext;
 const audioCtx = new AC();
-async function wakeAudio(){ try { if (audioCtx.state !== "running") await audioCtx.resume(); } catch(e) {} return audioCtx.state === "running"; }
+async function wakeAudio(){ try { if (audioCtx.state !== "running") await Promise.race([audioCtx.resume(), new Promise(r => setTimeout(r, 2000))]); } catch(e) {} return audioCtx.state === "running"; }
 
 /* ---------- Selina en 3D ---------- */
 /* Un sourire au repos : les coins de la bouche relevés, les joues un peu plissées */
@@ -772,7 +772,7 @@ async function connect(){
       const ready = new Promise((res, rej) => { resolveReady = res; rejectReady = rej; });
       ready.catch(() => {});
       let closed = false;
-      const s = await ai.live.connect({
+      const s = await withTimeout(ai.live.connect({
         model,
         config: {
           responseModalities: [Modality.AUDIO],
@@ -786,7 +786,7 @@ async function connect(){
           onerror: e => { lastErr = (e && (e.message || e.error?.message)) || ""; if (lastErr) diag("Erreur : " + lastErr); },
           onclose: e => { closed = true; lastErr = (e && e.reason) ? `${e.reason} (code ${e.code})` : (e && e.code && e.code !== 1000 ? `code ${e.code}` + (lastErr ? ", " + lastErr : "") : lastErr); rejectReady(new Error(lastErr || "fermée")); if (!connecting && live && session === s) { stop(); showError(closeMessage(lastErr)); } }
         }
-      });
+      }), 12000, "Google ne répond pas (" + m.replace("gemini-", "") + ")");
       s._resolveReady = resolveReady; session = s;
       await Promise.race([ready, new Promise(res => setTimeout(res, 4000))]);
       if (!closed){ window.__model = model; return s; }
@@ -802,6 +802,8 @@ function closeMessage(reason){
   if (/api key|API_KEY_INVALID|401|403|permission/i.test(reason)) return "La clé Google n’est pas acceptée. Vérifiez-la dans les réglages (roue dentée).";
   if (/quota|429|RESOURCE_EXHAUSTED|rate/i.test(reason)) return "La limite gratuite du moment est atteinte. Réessayez un peu plus tard.";
   if (/location|region|not supported in your country/i.test(reason)) return "Google refuse cette fonction depuis votre pays avec l’offre gratuite.";
+  if (/délai dépassé : micro/.test(reason)) return "Le micro ne s’est pas ouvert. Fermez l’application (balayez-la vers le haut), rouvrez-la et réessayez ; vérifiez qu’aucune autre application n’utilise le micro.";
+  if (/délai dépassé/.test(reason)) return "Google ne répond pas pour le moment (" + reason.replace("délai dépassé : ", "") + "). Vérifiez la connexion internet, puis réessayez dans une minute.";
   return "La conversation s’est arrêtée. Raison donnée par Google : « " + (reason || "aucune") + " » (modèle " + (lastModel || "?") + "). Faites une capture de ce message.";
 }
 
@@ -829,20 +831,24 @@ async function startMic(){
   return { stream, ctx, node, src, sink };
 }
 
+/* Chaque étape du démarrage a un délai maximal : plus jamais de « Connexion… » sans fin */
+function withTimeout(p, ms, what){ return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error("délai dépassé : " + what)), ms))]); }
 async function start(){
-  const woke = audioCtx.resume().catch(() => {});
+  const woke = withTimeout(audioCtx.resume(), 2000, "son").catch(() => {});
   if (!cfg.apiKey){ $("settings").showModal(); return; }
   $("big").disabled = true; setPill("", "Connexion…");
   try {
     await woke;
-    if (head) await setupLips();
+    if (head) await withTimeout(setupLips(), 8000, "avatar").catch(() => {});
     if (head && avatarReady){
       await head.streamStart({ sampleRate: 24000, lipsyncType: "visemes", lipsyncLang: "de", mood: "happy" },
         () => { lenaSpeaking = true; setPill("speaking", "Selina parle…"); },
         () => { lenaSpeaking = false; if (live) setPill("listening", "À vous, je vous écoute…"); });
     }
-    mic = await startMic();
-    if (!(await wakeAudio())) askForSound();
+    setPill("", "Connexion… (micro)");
+    mic = await withTimeout(startMic(), 20000, "micro");
+    if (!(await withTimeout(wakeAudio(), 2500, "son").catch(() => false))) askForSound();
+    setPill("", "Connexion… (Google)");
     live = true; connecting = true; chunks = 0; speakUntil = 0; turnPcm = []; diag();
     session = await connect();
     connecting = false;
