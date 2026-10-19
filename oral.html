@@ -116,6 +116,29 @@ header .tools{display:flex;gap:8px}
 .lvl i{display:block;height:100%;width:0;background:var(--good);transition:width .1s}
 .label{text-align:center;font-size:.85rem;color:var(--muted);margin-top:-6px;padding-bottom:6px}
 
+/* Pendant la conversation : Selina plus petite, micro réduit, place au texte */
+body.incall .stage{height:clamp(140px,24vh,230px);border-radius:22px}
+body.incall .controls{grid-template-columns:44px 60px 44px;gap:18px;padding:4px 0 8px}
+body.incall .big{width:60px;height:60px}
+body.incall .big svg{width:26px;height:26px}
+body.incall .side{width:44px;height:44px}
+body.incall .label{display:none}
+body.incall header{padding:6px 0 6px}
+body.incall header h1{font-size:1.5rem}
+body.incall .msg{font-size:1.08rem}
+
+/* Les réponses proposées */
+.sugg{padding:2px 0 6px}
+.sugg-h{margin:0 0 6px;font-size:.78rem;font-weight:600;color:var(--muted)}
+.sugg-h span{font-weight:400}
+.sugg-row{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.sugg-row::-webkit-scrollbar{display:none}
+.sg{flex:none;max-width:78%;text-align:left;border:1px solid var(--line);border-radius:16px;padding:8px 12px;background:var(--sheet);display:flex;flex-direction:column;gap:2px}
+.sg b{font-weight:600;font-size:.98rem;color:var(--ink)}
+.sg small{font-size:.8rem;color:var(--muted)}
+.sg:active{background:var(--gold-soft)}
+.sg.wait{opacity:.55}
+
 /* Réglages */
 dialog{border:0;border-radius:24px;padding:0;width:min(560px,calc(100vw - 24px));max-height:calc(100dvh - 40px);background:var(--paper);color:var(--ink)}
 dialog::backdrop{background:rgba(4,22,52,.45)}
@@ -165,6 +188,7 @@ a{color:var(--accent)}
   </div>
 
   <div class="diag" id="diag" hidden><span class="lvl"><i id="lvl"></i></span><span id="diagText">Micro</span></div>
+  <div class="sugg" id="sugg" hidden aria-label="Réponses proposées"><p class="sugg-h">Vous pourriez répondre <span>(dites-la à voix haute, ou touchez-la)</span></p><div class="sugg-row" id="suggRow"></div></div>
   <div class="topics" id="topics" role="group" aria-label="Sujet"></div>
   <div class="controls">
     <button class="side" id="mute" aria-pressed="false" aria-label="Couper mon micro" style="visibility:hidden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg></button>
@@ -214,7 +238,7 @@ a{color:var(--accent)}
     <label class="switch"><span><span class="lab">Selina traduit à voix haute</span><br><span class="meta">Après chaque réplique en allemand, elle redit l’essentiel en français. Utile au tout début ; à décocher dès que vous suivez.</span></span><input type="checkbox" id="frVoice"></label>
     <label class="switch"><span><span class="lab">Avec un casque ou des écouteurs</span><br><span class="meta">Vous pourrez couper la parole à Selina. Sans casque, laissez décoché : le micro se met en pause quand elle parle, pour qu’elle ne s’entende pas elle-même.</span></span><input type="checkbox" id="headset"></label>
     <div class="row"><button class="btn" value="ok">Enregistrer</button><button class="btn ghost" type="button" id="forgetKey">Oublier la clé</button></div>
-    <p class="meta">Version du 19 octobre · 5. <button class="btn ghost" type="button" id="refresh">Mettre à jour l’application</button></p>
+    <p class="meta">Version du 19 octobre · 6 (réponses proposées). <button class="btn ghost" type="button" id="refresh">Mettre à jour l’application</button></p>
     <p class="meta">Voix et conversation : Gemini Live (Google, offre gratuite). Avatar : modèle « brunette » de Ready Player Me (CC BY-NC 4.0), animé par TalkingHead et HeadAudio (logiciels libres, licence MIT). Pour un usage personnel uniquement.</p>
   </form>
 </dialog>
@@ -450,7 +474,8 @@ ${facts ? `What the learner already told you in earlier lessons: ${facts}. Never
 How to speak:
 - Speak Swiss Standard German (Schweizer Hochdeutsch), never dialect. Use Swiss words (Velo, Billett, Glace, Rahm, Gipfeli, Franken, Merci).
 - Speak slowly and very clearly, like a teacher with a beginner. ${a1 ? "Very short and simple sentences, present tense, common words; 1 to 3 sentences per turn." : "Simple sentences; you may use the Perfekt and modal verbs; 2 to 4 sentences per turn."}
-- This is a real conversation, not a quiz: react to what the learner says with interest, share a little about yourself, then ask one natural follow-up question. Never ask again something the learner already told you.
+${a1 ? `- The learner is a real beginner and finds it hard to answer: ask very easy questions, preferably yes/no questions or either/or questions ("Trinkst du lieber Kaffee oder Tee?"), about everyday life. When you ask something new, give one example answer ("Ich trinke gern Kaffee. Und du?"). Use du.
+` : ""}- This is a real conversation, not a quiz: react to what the learner says with interest, share a little about yourself, then ask one natural follow-up question. Never ask again something the learner already told you.
 - When the learner makes a mistake, repeat their idea correctly in your answer, in a natural way, and add a very short tip only for important mistakes.
 - If the learner is stuck or speaks French, help briefly in French (one sentence), give them the German sentence to say, and invite them to repeat it.
 - The learner speaks German with a French accent, sometimes French. Never answer in Spanish or English.
@@ -521,8 +546,54 @@ function translate(el){
   if (showFr) load();
 }
 function closeTurn(which){
-  if (which !== "me" && curSelina){ curSelina.classList.remove("live"); curSelina.textContent = curSelina.textContent.replace(/ß/g, "ss").trim(); translate(curSelina); curSelina = null; }
+  if (which !== "me" && curSelina){ curSelina.classList.remove("live"); curSelina.textContent = curSelina.textContent.replace(/ß/g, "ss").trim(); translate(curSelina); suggest(curSelina.firstChild ? curSelina.firstChild.textContent : ""); curSelina = null; }
   if (which !== "lena" && curMe){ curMe.classList.remove("live"); curMe.textContent = curMe.textContent.trim(); curMe = null; }
+}
+/* Des réponses toutes simples à dire, proposées après chaque réplique de Selina */
+const HELP = [["Wie bitte?", "Pardon ?"], ["Langsamer, bitte.", "Plus lentement, s’il te plaît."], ["Ich verstehe nicht.", "Je ne comprends pas."], ["Noch einmal, bitte.", "Encore une fois, s’il te plaît."]];
+let suggTurn = 0;
+function chatSoFar(){ return [...document.querySelectorAll("#talk .msg")].slice(-6).map(m => (m.classList.contains("me") ? "Apprenant : " : "Selina : ") + (m.firstChild ? m.firstChild.textContent : "").trim()).join("\n"); }
+function showSugg(list, waiting){
+  const row = $("suggRow"); row.innerHTML = "";
+  list.forEach(([de, fr]) => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "sg" + (waiting ? " wait" : "");
+    const t = document.createElement("b"); t.lang = "de"; t.textContent = de; const f = document.createElement("small"); f.textContent = fr;
+    b.append(t, f);
+    b.onclick = () => sayThis(de);
+    row.appendChild(b);
+  });
+  row.scrollLeft = 0; $("sugg").hidden = !live;
+}
+function sayThis(de){
+  if (!session) return;
+  closeTurn(); const el = addMsg("me", de); el.classList.remove("live");
+  try { session.sendRealtimeInput({ text: de }); } catch(e) {}
+  $("sugg").hidden = true; setPill("listening", "Selina réfléchit…"); thinkingSince = performance.now();
+}
+async function suggest(de){
+  if (!de || !live) return;
+  const turn = ++suggTurn;
+  showSugg(HELP.slice(0, 3), true);
+  if (!cfg.apiKey) { showSugg(HELP, false); return; }
+  textAi = textAi || new GoogleGenAI({ apiKey: cfg.apiKey });
+  const ask = `Tu aides un débutant complet en allemand (niveau ${cfg.level}) qui parle avec sa professeure Selina, à Berne.${cfg.name ? ` Il s'appelle ${cfg.name}.` : ""}
+Derniers échanges :
+${chatSoFar()}
+
+Selina vient de dire : « ${de} »
+Propose exactement 3 réponses que l'apprenant pourrait dire à voix haute : très courtes (2 à 8 mots), très simples, en allemand standard de Suisse (ss au lieu de ß), variées (par exemple une réponse positive, une autre réponse possible, et une question en retour ou une demande d'aide). Ajoute pour chacune sa traduction française.
+Réponds uniquement en JSON : [{"de":"…","fr":"…"}, …]`;
+  for (const model of ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-2.0-flash"]){
+    try {
+      const config = { responseMimeType: "application/json", ...(model.startsWith("gemini-2.5") ? { thinkingConfig: { thinkingBudget: 0 } } : {}) };
+      const r = await textAi.models.generateContent({ model, contents: ask, config });
+      let list = JSON.parse((r.text || "").match(/\[[\s\S]*\]/)[0]);
+      list = list.filter(x => x && x.de).slice(0, 3).map(x => [String(x.de).replace(/ß/g, "ss"), String(x.fr || "")]);
+      if (list.length && turn === suggTurn){ showSugg([...list, HELP[1], HELP[2]], false); return; }
+      if (list.length) return;
+    } catch(e) {}
+  }
+  if (turn === suggTurn) showSugg(HELP, false);
 }
 function showError(text){
   const el = document.createElement("div"); el.className = "notice"; el.textContent = text;
@@ -541,7 +612,7 @@ function onMessage(msg){
   diag();
   const sc = msg.serverContent; if (!sc) { if (msg.goAway) showError("La séance arrive à sa limite de 15 minutes : touchez le bouton pour en recommencer une."); return; }
   if (sc.interrupted){ if (head) head.streamInterrupt(); stopVoice(); lenaSpeaking = false; closeTurn("lena"); setPill("listening", "Je vous écoute…"); }
-  if (sc.inputTranscription?.text){ if (curSelina) closeTurn("lena"); appendTo("me", sc.inputTranscription.text); }
+  if (sc.inputTranscription?.text){ if (curSelina) closeTurn("lena"); appendTo("me", sc.inputTranscription.text); $("sugg").hidden = true; }
   const parts = sc.modelTurn?.parts || [];
   for (const p of parts){
     if (p.inlineData?.data){
@@ -750,7 +821,7 @@ async function start(){
     try { wakeLock = await navigator.wakeLock?.request("screen"); } catch(e) {}
     startedAt = Date.now(); $("timer").hidden = false; tick = setInterval(() => { const s = Math.floor((Date.now() - startedAt) / 1000); $("timer").textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; }, 1000);
     $("big").classList.add("on"); $("big").setAttribute("aria-label", "Terminer la conversation"); $("bigLabel").textContent = "Terminer";
-    $("mute").style.visibility = "visible"; $("topics").hidden = true;
+    $("mute").style.visibility = "visible"; $("topics").hidden = true; document.body.classList.add("incall");
     setPill("listening", "Selina se prépare…");
     diag();
     const hello = "(The learner has just started the conversation. Greet them and begin.)";
@@ -782,6 +853,7 @@ function stop(){
   closeTurn();
   $("big").classList.remove("on"); $("big").setAttribute("aria-label", "Parler avec Selina"); $("bigLabel").textContent = "Parler avec Selina";
   $("mute").style.visibility = "hidden"; muted = false; $("mute").setAttribute("aria-pressed", "false"); $("topics").hidden = false;
+  document.body.classList.remove("incall"); $("sugg").hidden = true; clearTimeout(lenaIdle);
   setPill("", "Prête à parler");
 }
 $("big").addEventListener("click", () => live ? stop() : start());
