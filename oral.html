@@ -160,7 +160,7 @@ a{color:var(--accent)}
 @media (prefers-reduced-motion: reduce){ .pill i,.lena-art .eye,.lena-art .head,.lena-art .body{animation:none!important} }
 </style>
 <script>/* Mise à jour : si une version plus récente est en ligne, la page se recharge d'elle-même (au démarrage et au retour dans l'application) */
-(function(){ var B = "20261019101927";
+(function(){ var B = "20261019102726";
   function check(){ try { fetch("version.txt?t=" + Date.now(), { cache: "no-store" }).then(function(r){ return r.ok ? r.text() : ""; }).then(function(t){ t = (t || "").trim();
     if (!t || t === B) return; var k = "maj-" + t; try { if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, "1"); } catch(e) {}
     location.replace(location.pathname + "?v=" + t + location.hash); }).catch(function(){}); } catch(e) {} }
@@ -247,7 +247,7 @@ a{color:var(--accent)}
     <label class="switch"><span><span class="lab">Selina traduit à voix haute</span><br><span class="meta">Après chaque réplique en allemand, elle redit l’essentiel en français. Utile au tout début ; à décocher dès que vous suivez.</span></span><input type="checkbox" id="frVoice"></label>
     <label class="switch"><span><span class="lab">Avec un casque ou des écouteurs</span><br><span class="meta">Vous pourrez couper la parole à Selina. Sans casque, laissez décoché : le micro se met en pause quand elle parle, pour qu’elle ne s’entende pas elle-même.</span></span><input type="checkbox" id="headset"></label>
     <div class="row"><button class="btn" value="ok">Enregistrer</button><button class="btn ghost" type="button" id="forgetKey">Oublier la clé</button></div>
-    <p class="meta">Version du 19 octobre · 8. <button class="btn ghost" type="button" id="refresh">Mettre à jour l’application</button></p>
+    <p class="meta">Version du 19 octobre · 9. <button class="btn ghost" type="button" id="refresh">Mettre à jour l’application</button></p>
     <p class="meta">Voix et conversation : Gemini Live (Google, offre gratuite). Avatar : modèle « brunette » de Ready Player Me (CC BY-NC 4.0), animé par TalkingHead et HeadAudio (logiciels libres, licence MIT). Pour un usage personnel uniquement.</p>
   </form>
 </dialog>
@@ -772,7 +772,9 @@ async function connect(){
       const ready = new Promise((res, rej) => { resolveReady = res; rejectReady = rej; });
       ready.catch(() => {});
       let closed = false;
-      const s = await withTimeout(ai.live.connect({
+      /* Si Google ferme avant d'avoir accepté la séance, la bibliothèque n'avertit pas : on écoute la fermeture nous-mêmes */
+      let rejectClosed; const closedEarly = new Promise((_, rej) => { rejectClosed = rej; }); closedEarly.catch(() => {});
+      const s = await withTimeout(Promise.race([closedEarly, ai.live.connect({
         model,
         config: {
           responseModalities: [Modality.AUDIO],
@@ -784,16 +786,16 @@ async function connect(){
           onopen: () => {},
           onmessage: onMessage,
           onerror: e => { lastErr = (e && (e.message || e.error?.message)) || ""; if (lastErr) diag("Erreur : " + lastErr); },
-          onclose: e => { closed = true; lastErr = (e && e.reason) ? `${e.reason} (code ${e.code})` : (e && e.code && e.code !== 1000 ? `code ${e.code}` + (lastErr ? ", " + lastErr : "") : lastErr); rejectReady(new Error(lastErr || "fermée")); if (!connecting && live && session === s) { stop(); showError(closeMessage(lastErr)); } }
+          onclose: e => { closed = true; lastErr = (e && e.reason) ? `${e.reason} (code ${e.code})` : (e && e.code && e.code !== 1000 ? `code ${e.code}` + (lastErr ? ", " + lastErr : "") : lastErr); rejectReady(new Error(lastErr || "fermée")); rejectClosed(new Error(lastErr || "Google a fermé la connexion")); if (!connecting && live && session === s) { stop(); showError(closeMessage(lastErr)); } }
         }
-      }), 12000, "Google ne répond pas (" + m.replace("gemini-", "") + ")");
+      })]), 12000, "Google ne répond pas (" + m.replace("gemini-", "") + ")");
       s._resolveReady = resolveReady; session = s;
       await Promise.race([ready, new Promise(res => setTimeout(res, 4000))]);
       if (!closed){ window.__model = model; return s; }
     } catch(e) {
       lastErr = (e && e.message) || String(e);
       session = null; model = "";
-      if (/api key|API_KEY|permission|401|403/i.test(lastErr)) break;
+      if (/api key|API_KEY|permission|401|403|quota|429|RESOURCE_EXHAUSTED/i.test(lastErr)) break;
     }
   }
   throw new Error(lastErr || "connexion impossible");
