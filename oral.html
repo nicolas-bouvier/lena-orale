@@ -157,6 +157,13 @@ dialog::backdrop{background:rgba(4,22,52,.45)}
 a{color:var(--accent)}
 @media (prefers-reduced-motion: reduce){ .pill i,.lena-art .eye,.lena-art .head,.lena-art .body{animation:none!important} }
 </style>
+<script>/* Mise à jour : si une version plus récente est en ligne, la page se recharge d'elle-même (au démarrage et au retour dans l'application) */
+(function(){ var B = "20261019095740";
+  function check(){ try { fetch("version.txt?t=" + Date.now(), { cache: "no-store" }).then(function(r){ return r.ok ? r.text() : ""; }).then(function(t){ t = (t || "").trim();
+    if (!t || t === B) return; var k = "maj-" + t; try { if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, "1"); } catch(e) {}
+    location.replace(location.pathname + "?v=" + t + location.hash); }).catch(function(){}); } catch(e) {} }
+  check(); document.addEventListener("visibilitychange", function(){ if (document.visibilityState === "visible") check(); });
+})();</script>
 <script type="importmap">
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js/+esm",
