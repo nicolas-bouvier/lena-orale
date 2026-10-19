@@ -210,6 +210,7 @@ a{color:var(--accent)}
     <label class="switch"><span><span class="lab">Selina traduit à voix haute</span><br><span class="meta">Après chaque réplique en allemand, elle redit l’essentiel en français. Utile au tout début ; à décocher dès que vous suivez.</span></span><input type="checkbox" id="frVoice"></label>
     <label class="switch"><span><span class="lab">Avec un casque ou des écouteurs</span><br><span class="meta">Vous pourrez couper la parole à Selina. Sans casque, laissez décoché : le micro se met en pause quand elle parle, pour qu’elle ne s’entende pas elle-même.</span></span><input type="checkbox" id="headset"></label>
     <div class="row"><button class="btn" value="ok">Enregistrer</button><button class="btn ghost" type="button" id="forgetKey">Oublier la clé</button></div>
+    <p class="meta">Version du 19 octobre · traduction FR. <button class="btn ghost" type="button" id="refresh">Mettre à jour l’application</button></p>
     <p class="meta">Voix et conversation : Gemini Live (Google, offre gratuite). Avatar : modèle « brunette » de Ready Player Me (CC BY-NC 4.0), animé par TalkingHead et HeadAudio (logiciels libres, licence MIT). Pour un usage personnel uniquement.</p>
   </form>
 </dialog>
@@ -426,7 +427,7 @@ async function setupLips(){
 /* ---------- La conversation (Gemini Live) ---------- */
 let speakUntil = 0, chunks = 0, model = "", lastModel = "", lastMsg = "";
 let connecting = false, live = false, session = null, mic = null, muted = false, lenaSpeaking = false, startedAt = 0, tick = null, wakeLock = null;
-let curSelina = null, curMe = null;
+let curSelina = null, curMe = null, lenaIdle = 0;
 
 function diag(extra){
   $("diag").hidden = !live;
@@ -460,7 +461,7 @@ function appendTo(which, text){
   if (!text) return;
   if (which === "selina" || which === "lena"){ if (!curSelina){ vText = ""; vPos = 0; } vText += text.toLowerCase(); thinkingSince = 0; }
   else thinkingSince = performance.now();
-  if (which === "lena"){ if (!curSelina) curSelina = addMsg("lena", ""); curSelina.textContent += text; }
+  if (which === "lena"){ if (!curSelina) curSelina = addMsg("lena", ""); curSelina.textContent += text; clearTimeout(lenaIdle); lenaIdle = setTimeout(() => closeTurn("lena"), 2500); }
   else { if (!curMe) curMe = addMsg("me", ""); curMe.textContent += text; }
   $("talk").scrollTop = $("talk").scrollHeight;
 }
@@ -768,6 +769,7 @@ $("openSettings").addEventListener("click", () => { fillSettings(); $("settings"
 /* Chaque réglage s'enregistre dès qu'il est saisi (et avant le rechargement qui suit le choix d'un avatar) */
 function readSettings(){ const before = cfg.face; cfg.face = $("face").value; $("field3d").hidden = cfg.face !== "3d"; $("fieldImg").hidden = cfg.face === "3d"; $("fieldSprite").hidden = cfg.face === "3d"; cfg.model = $("model").value; cfg.apiKey = $("apikey").value.trim(); cfg.name = $("pname").value.trim(); cfg.voice = $("voice").value; cfg.level = $("level").value; cfg.headset = $("headset").checked; cfg.frVoice = $("frVoice").checked; saveCfg(); if (before && before !== cfg.face) setTimeout(() => location.reload(), 300); }
 $("settingsForm").addEventListener("submit", readSettings);
+$("refresh").onclick = () => { location.replace(location.pathname + "?v=" + Date.now()); };
 ["apikey","pname","voice","level","headset","model","face","frVoice"].forEach(id => { $(id).addEventListener("input", readSettings); $(id).addEventListener("change", readSettings); });
 $("avatarFile").addEventListener("change", async e => {
   readSettings();
